@@ -368,7 +368,9 @@ const APP = (() => {
      PWA
   ───────────────────────────────────────────── */
 
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js', { scope: '/urban-map/' }).catch(() => {});
+  }
   window.addEventListener('beforeinstallprompt', e => e.preventDefault());
 
   /* ─────────────────────────────────────────────
