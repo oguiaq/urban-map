@@ -21,12 +21,22 @@
   <!-- Map canvas -->
   <div id="map"></div>
 
-  <!-- Header -->
+  <!-- ── HEADER ── -->
   <header id="header">
     <h1>Urban<span>Map</span></h1>
-    <div id="status-pill">
-      <div id="status-dot"></div>
-      <span id="status-text">Localizando…</span>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div id="status-pill">
+        <div id="status-dot"></div>
+        <span id="status-text">Localizando…</span>
+      </div>
+      <!-- Help button -->
+      <button id="help-btn" title="Sobre o UrbanMap" aria-label="Abrir informações sobre o projeto">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </button>
     </div>
   </header>
 
@@ -43,6 +53,7 @@
     <div class="leg-item"><div class="leg-dot" style="background:var(--c-ilum)"></div>Iluminação</div>
     <div class="leg-item"><div class="leg-dot" style="background:var(--c-rampa)"></div>Rampa</div>
     <div class="leg-item"><div class="leg-dot" style="background:var(--c-obs)"></div>Obstrução</div>
+    <div class="leg-item"><div class="leg-dot" style="background:var(--c-inund)"></div>Inundação</div>
   </div>
 
   <!-- Locate button -->
@@ -64,7 +75,7 @@
     </svg>
   </button>
 
-  <!-- Overlay -->
+  <!-- Overlay (shared by sheet and help modal) -->
   <div id="overlay" role="presentation"></div>
 
   <!-- ── BOTTOM SHEET ── -->
@@ -100,6 +111,11 @@
         <span class="label">Obstrução</span>
         <span class="desc">Via ou calçada bloqueada</span>
       </button>
+      <button class="cat-btn" data-cat="inund" role="radio" aria-checked="false">
+        <span class="icon" aria-hidden="true">🌊</span>
+        <span class="label">Inundação</span>
+        <span class="desc">Alagamento ou área inundada</span>
+      </button>
     </div>
 
     <!-- Image upload – obrigatório -->
@@ -108,8 +124,6 @@
         Foto do problema
         <span class="required-badge">obrigatório</span>
       </label>
-
-      <!-- Source buttons: camera + gallery -->
       <div class="img-source-row" id="img-source-row">
         <button class="img-src-btn" id="btn-camera" type="button" aria-label="Abrir câmera">
           <span class="btn-icon" aria-hidden="true">📷</span>
@@ -122,17 +136,11 @@
           <span class="btn-sub">Escolher imagem</span>
         </button>
       </div>
-
-      <!-- Preview after selection -->
       <div id="img-preview-wrap">
         <img id="img-preview" src="" alt="Prévia da foto selecionada" />
         <button id="img-remove" type="button" aria-label="Remover foto">✕</button>
       </div>
-
-      <!-- Validation hint -->
       <div id="img-required-hint" role="alert">⚠ Adicione uma foto para continuar</div>
-
-      <!-- Hidden inputs -->
       <input type="file" id="img-input-camera"  accept="image/*" capture="environment" />
       <input type="file" id="img-input-gallery" accept="image/*" />
     </div>
@@ -158,6 +166,91 @@
     </div>
     <div id="lb-footer">
       <div id="lb-coords"></div>
+    </div>
+  </div>
+
+  <!-- ── HELP MODAL ── -->
+  <div id="help-overlay" role="presentation"></div>
+  <div id="help-modal" role="dialog" aria-modal="true" aria-label="Sobre o UrbanMap">
+    <div class="help-inner">
+
+      <!-- Header -->
+      <div class="help-header">
+        <div class="help-logo">
+          <span class="help-logo-icon">🗺️</span>
+          <div>
+            <div class="help-logo-name">Urban<span>Map</span></div>
+            <div class="help-logo-tag">Fiscalize sua cidade</div>
+          </div>
+        </div>
+        <button id="help-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <!-- Mission -->
+      <div class="help-section">
+        <div class="help-section-label">🎯 Nossa missão</div>
+        <p class="help-text">
+          O UrbanMap é uma ferramenta cidadã para <strong>documentar e reportar problemas de acessibilidade e infraestrutura urbana</strong> — buracos, desníveis, falta de iluminação, rampas danificadas, obstruções e áreas de inundação.
+        </p>
+        <p class="help-text">
+          Qualquer pessoa pode registrar uma ocorrência com foto e localização GPS em segundos, diretamente do celular, sem precisar de cadastro.
+        </p>
+      </div>
+
+      <!-- How it works -->
+      <div class="help-section">
+        <div class="help-section-label">⚙️ Como funciona</div>
+        <div class="help-steps">
+          <div class="help-step">
+            <div class="step-num">1</div>
+            <div class="step-text">Toque em <strong>+</strong> para abrir o formulário de registro</div>
+          </div>
+          <div class="help-step">
+            <div class="step-num">2</div>
+            <div class="step-text">Selecione a <strong>categoria</strong> do problema encontrado</div>
+          </div>
+          <div class="help-step">
+            <div class="step-num">3</div>
+            <div class="step-text">Tire ou envie uma <strong>foto</strong> do problema</div>
+          </div>
+          <div class="help-step">
+            <div class="step-num">4</div>
+            <div class="step-text">Confirme — o marcador é fixado nas suas <strong>coordenadas GPS</strong></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Monthly report -->
+      <div class="help-section help-report-box">
+        <div class="help-section-label">📋 Relatório mensal ao poder público</div>
+        <p class="help-text">
+          Ao final de cada mês, todas as ocorrências registradas são compiladas em um <strong>relatório oficial</strong> entregue aos órgãos responsáveis, contendo:
+        </p>
+        <ul class="help-list">
+          <li>📍 Localização precisa de cada problema</li>
+          <li>📷 Foto enviada pelo cidadão</li>
+          <li>🌐 Coordenadas geográficas (lat/lng)</li>
+          <li>🗓️ Data e horário do registro</li>
+          <li>🔥 Mapa de calor das áreas mais prejudicadas</li>
+        </ul>
+      </div>
+
+      <!-- Support -->
+      <div class="help-section help-support">
+        <div class="help-section-label">✉️ Suporte e contato</div>
+        <p class="help-text">Dúvidas, sugestões ou problemas técnicos? Fale conosco:</p>
+        <a href="mailto:suporte@urbanmap.app" class="help-email">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+          </svg>
+          suporte@urbanmap.app
+        </a>
+      </div>
+
+      <!-- Version -->
+      <div class="help-version">UrbanMap v1.0 · Frontend Preview</div>
+
     </div>
   </div>
 
