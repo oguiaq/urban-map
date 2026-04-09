@@ -1,7 +1,8 @@
 /* ═══════════════════════════════════════════════
    UrbanMap — app.js
+   - Envia ocorrências para a API no Railway
+   - Carrega ocorrências salvas ao abrir o app
    - Tema automático por horário (6h–18h = claro)
-   - Toggle manual persistido em sessionStorage
    - Foto obrigatória (câmera separada de galeria)
    - 6 categorias incluindo Inundação
    - Modal de ajuda com missão + email de suporte
@@ -13,6 +14,9 @@ const APP = (() => {
   /* ─────────────────────────────────────────────
      CONSTANTES
   ───────────────────────────────────────────── */
+
+  // URL base da API no Railway
+  const API_URL = 'https://urban-map-api-production.up.railway.app';
 
   const CAT = {
     buraco:   { color: '#ff6b35', emoji: '🕳️', label: 'Buraco'             },
@@ -35,8 +39,9 @@ const APP = (() => {
   let userLat      = null;
   let userLng      = null;
   let selectedCat  = null;
-  let selectedImg  = null;
-  let markerStore  = {};
+  let selectedFile = null;   // File object (para enviar ao backend)
+  let selectedImg  = null;   // base64 (para preview local)
+  let markerStore  = {};     // id → dados (para o lightbox)
   let markerCount  = 0;
   let userMarker   = null;
   let accCircle    = null;
@@ -138,6 +143,96 @@ const APP = (() => {
   });
 
   /* ─────────────────────────────────────────────
+     RENDERIZAR MARCADOR NO MAPA
+     Usado tanto ao registrar quanto ao carregar
+     ocorrências existentes do banco
+  ───────────────────────────────────────────── */
+
+  function renderMarker(ocorrencia) {
+    const { id, categoria, latitude, longitude, foto_url, criado_em } = ocorrencia;
+    const cat  = CAT[categoria];
+    if (!cat) return;
+
+    const ll   = [parseFloat(latitude), parseFloat(longitude)];
+    const date = new Date(criado_em).toLocaleDateString('pt-BR');
+    const time = new Date(criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+    // Guarda no markerStore para o lightbox
+    markerStore[id] = {
+      img:  foto_url,
+      cat:  categoria,
+      date, time,
+      lat:  parseFloat(latitude),
+      lng:  parseFloat(longitude),
+    };
+
+    const icon = L.divIcon({
+      className: '',
+      html: `<div class="urban-marker" style="background:${cat.color}22;border-color:${cat.color};">
+               <span class="emoji">${cat.emoji}</span>
+               <div class="cam-badge">📷</div>
+             </div>`,
+      iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -44],
+    });
+
+    const popupHtml = `
+      <div style="position:relative;cursor:pointer;overflow:hidden;"
+           onclick="APP.openLightbox(${id})">
+        <img src="${foto_url}" style="width:100%;height:140px;object-fit:cover;display:block;" />
+        <div style="
+          position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+          background:rgba(0,0,0,0);transition:background .2s;"
+          onmouseenter="this.style.background='rgba(0,0,0,.3)'"
+          onmouseleave="this.style.background='rgba(0,0,0,0)'">
+          <div style="background:rgba(0,0,0,.6);border-radius:99px;padding:5px 14px;font-size:.73rem;color:#fff;font-family:'DM Sans',sans-serif;white-space:nowrap;">
+            🔍 Ampliar foto
+          </div>
+        </div>
+      </div>
+      <div style="padding:12px 14px 0;font-family:'DM Sans',sans-serif;">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;color:${cat.color};margin-bottom:4px;">
+          ${cat.emoji} ${cat.label}
+        </div>
+        <div class="pop-info-date"  style="font-size:.73rem;color:#6a8aaa;">${date} às ${time}</div>
+        <div class="pop-info-coord" style="font-size:.68rem;color:#3a5a7a;margin-top:2px;font-family:monospace;">
+          ${parseFloat(latitude).toFixed(5)}, ${parseFloat(longitude).toFixed(5)}
+        </div>
+      </div>
+      <button class="pop-photo-btn" style="color:${cat.color};" onclick="APP.openLightbox(${id})">
+        📷 Ver foto em tela cheia
+      </button>`;
+
+    const popup = L.popup({ className: 'upop', maxWidth: 240, minWidth: 210, autoPanPadding: [20, 80] })
+      .setContent(popupHtml);
+
+    L.marker(ll, { icon }).addTo(map).bindPopup(popup);
+  }
+
+  /* ─────────────────────────────────────────────
+     CARREGAR OCORRÊNCIAS DO BANCO AO ABRIR O APP
+  ───────────────────────────────────────────── */
+
+  async function carregarOcorrencias() {
+    try {
+      setStatus(false, 'Carregando…');
+      const res = await fetch(`${API_URL}/ocorrencias?limite=500`);
+      if (!res.ok) throw new Error('Falha ao carregar ocorrências');
+      const data = await res.json();
+
+      data.ocorrencias.forEach(o => renderMarker(o));
+      markerCount = data.total;
+      document.getElementById('marker-count').textContent = markerCount;
+
+    } catch (err) {
+      console.error('Erro ao carregar ocorrências:', err.message);
+      // Não bloqueia o app — só loga silenciosamente
+    }
+  }
+
+  // Carrega assim que o mapa estiver pronto
+  carregarOcorrencias();
+
+  /* ─────────────────────────────────────────────
      HELP MODAL
   ───────────────────────────────────────────── */
 
@@ -182,8 +277,9 @@ const APP = (() => {
     sheet.classList.remove('visible');
     overlay.classList.remove('visible');
     sheet.setAttribute('aria-hidden', 'true');
-    selectedCat = null;
-    selectedImg = null;
+    selectedCat  = null;
+    selectedImg  = null;
+    selectedFile = null;
     document.querySelectorAll('.cat-btn').forEach(b => {
       b.classList.remove('selected');
       b.setAttribute('aria-checked', 'false');
@@ -229,6 +325,11 @@ const APP = (() => {
   function handleFileInput(e) {
     const file = e.target.files[0];
     if (!file) return;
+
+    // Guarda o File original para enviar ao backend via FormData
+    selectedFile = file;
+
+    // Gera preview local via FileReader
     const reader = new FileReader();
     reader.onload = ev => {
       selectedImg = ev.target.result;
@@ -251,79 +352,70 @@ const APP = (() => {
   });
 
   function resetImgUI() {
-    selectedImg = null;
+    selectedImg  = null;
+    selectedFile = null;
     previewImg.src = '';
     previewWrap.classList.remove('show');
     sourceRow.style.display = '';
   }
 
   function updateConfirmBtn() {
-    document.getElementById('confirm-btn').disabled = !(selectedCat && selectedImg);
+    document.getElementById('confirm-btn').disabled = !(selectedCat && selectedFile);
   }
 
   /* ─────────────────────────────────────────────
-     CONFIRM / ADD MARKER
+     CONFIRM — ENVIA PARA A API
   ───────────────────────────────────────────── */
 
-  document.getElementById('confirm-btn').addEventListener('click', () => {
-    if (!selectedCat || !selectedImg) return;
+  document.getElementById('confirm-btn').addEventListener('click', async () => {
+    if (!selectedCat || !selectedFile) return;
     if (userLat === null) { showToast('⚠ Aguarde a localização ser obtida'); return; }
 
-    const cat  = CAT[selectedCat];
-    const ll   = [userLat, userLng];
-    const img  = selectedImg;
-    const id   = Date.now();
-    const now  = new Date();
-    const time = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const date = now.toLocaleDateString('pt-BR');
+    const confirmBtn = document.getElementById('confirm-btn');
 
-    markerStore[id] = { img, cat: selectedCat, date, time, lat: userLat, lng: userLng };
+    // Estado de loading — desabilita o botão e muda o texto
+    confirmBtn.disabled = true;
+    confirmBtn.textContent = 'Enviando…';
 
-    const icon = L.divIcon({
-      className: '',
-      html: `<div class="urban-marker" style="background:${cat.color}22;border-color:${cat.color};">
-               <span class="emoji">${cat.emoji}</span>
-               <div class="cam-badge">📷</div>
-             </div>`,
-      iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -44],
-    });
+    try {
+      // Monta o FormData — mesmo formato que o backend espera
+      const formData = new FormData();
+      formData.append('categoria',  selectedCat);
+      formData.append('latitude',   userLat.toString());
+      formData.append('longitude',  userLng.toString());
+      formData.append('foto',       selectedFile);  // campo "foto" conforme o backend
 
-    const popupHtml = `
-      <div style="position:relative;cursor:pointer;overflow:hidden;"
-           onclick="APP.openLightbox(${id})">
-        <img src="${img}" style="width:100%;height:140px;object-fit:cover;display:block;" />
-        <div style="
-          position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-          background:rgba(0,0,0,0);transition:background .2s;"
-          onmouseenter="this.style.background='rgba(0,0,0,.3)'"
-          onmouseleave="this.style.background='rgba(0,0,0,0)'">
-          <div style="background:rgba(0,0,0,.6);border-radius:99px;padding:5px 14px;font-size:.73rem;color:#fff;font-family:'DM Sans',sans-serif;white-space:nowrap;">
-            🔍 Ampliar foto
-          </div>
-        </div>
-      </div>
-      <div style="padding:12px 14px 0;font-family:'DM Sans',sans-serif;">
-        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;color:${cat.color};margin-bottom:4px;">
-          ${cat.emoji} ${cat.label}
-        </div>
-        <div class="pop-info-date"  style="font-size:.73rem;color:#6a8aaa;">${date} às ${time}</div>
-        <div class="pop-info-coord" style="font-size:.68rem;color:#3a5a7a;margin-top:2px;font-family:monospace;">
-          ${userLat.toFixed(5)}, ${userLng.toFixed(5)}
-        </div>
-      </div>
-      <button class="pop-photo-btn" style="color:${cat.color};" onclick="APP.openLightbox(${id})">
-        📷 Ver foto em tela cheia
-      </button>`;
+      const res = await fetch(`${API_URL}/ocorrencias`, {
+        method: 'POST',
+        body:   formData,
+        // NÃO defina Content-Type manualmente — o browser faz isso
+        // automaticamente com o boundary correto para multipart/form-data
+      });
 
-    const popup = L.popup({ className: 'upop', maxWidth: 240, minWidth: 210, autoPanPadding: [20, 80] })
-      .setContent(popupHtml);
+      if (!res.ok) {
+        const erro = await res.json().catch(() => ({ erro: 'Erro desconhecido' }));
+        throw new Error(erro.erro || `Erro ${res.status}`);
+      }
 
-    L.marker(ll, { icon }).addTo(map).bindPopup(popup).openPopup();
-    markerCount++;
-    document.getElementById('marker-count').textContent = markerCount;
+      const data = await res.json();
+      const ocorrencia = data.ocorrencia;
 
-    closeSheet();
-    showToast('✓ Ocorrência registrada com foto!');
+      // Renderiza o marcador no mapa com os dados retornados pelo banco
+      renderMarker(ocorrencia);
+      markerCount++;
+      document.getElementById('marker-count').textContent = markerCount;
+
+      closeSheet();
+      showToast('✓ Ocorrência registrada com sucesso!');
+
+    } catch (err) {
+      console.error('Erro ao registrar ocorrência:', err.message);
+      showToast(`❌ ${err.message}`);
+
+      // Reabilita o botão para o usuário tentar novamente
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Registrar ocorrência';
+    }
   });
 
   /* ─────────────────────────────────────────────
@@ -335,7 +427,7 @@ const APP = (() => {
     el.textContent = msg;
     el.classList.add('show');
     clearTimeout(el._t);
-    el._t = setTimeout(() => el.classList.remove('show'), 2800);
+    el._t = setTimeout(() => el.classList.remove('show'), 3000);
   }
 
   /* ─────────────────────────────────────────────
@@ -346,9 +438,9 @@ const APP = (() => {
     const d = markerStore[id];
     if (!d || !d.img) return;
     const cat = CAT[d.cat];
-    document.getElementById('lb-img').src           = d.img;
-    document.getElementById('lb-title').textContent = `${cat.emoji} ${cat.label}`;
-    document.getElementById('lb-meta').textContent  = `${d.date} às ${d.time}`;
+    document.getElementById('lb-img').src            = d.img;
+    document.getElementById('lb-title').textContent  = `${cat.emoji} ${cat.label}`;
+    document.getElementById('lb-meta').textContent   = `${d.date} às ${d.time}`;
     document.getElementById('lb-coords').textContent = `📍 ${d.lat.toFixed(5)}, ${d.lng.toFixed(5)}`;
     const img = document.getElementById('lb-img');
     img.style.animation = 'none';
