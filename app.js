@@ -219,13 +219,22 @@ const APP = (() => {
       if (!res.ok) throw new Error('Falha ao carregar ocorrências');
       const data = await res.json();
 
+      if (data.ocorrencias.length === 0) return;
+
+      // Renderiza todos os marcadores
       data.ocorrencias.forEach(o => renderMarker(o));
       markerCount = data.total;
       document.getElementById('marker-count').textContent = markerCount;
 
+      // Ajusta o mapa para mostrar todos os marcadores carregados.
+      // Quando o GPS localizar o usuário, o mapa vai para a posição dele normalmente.
+      const bounds = L.latLngBounds(
+        data.ocorrencias.map(o => [parseFloat(o.latitude), parseFloat(o.longitude)])
+      );
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
+
     } catch (err) {
       console.error('Erro ao carregar ocorrências:', err.message);
-      // Não bloqueia o app — só loga silenciosamente
     }
   }
 
