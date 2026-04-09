@@ -1,21 +1,9 @@
 /* ═══════════════════════════════════════════════
    UrbanMap — app.js
-   - Envia ocorrências para a API no Railway
-   - Carrega ocorrências salvas ao abrir o app
-   - Tema automático por horário (6h–18h = claro)
-   - Foto obrigatória (câmera separada de galeria)
-   - 6 categorias incluindo Inundação
-   - Modal de ajuda com missão + email de suporte
-   - Lightbox para visualização em tela cheia
 ═══════════════════════════════════════════════ */
 
 const APP = (() => {
 
-  /* ─────────────────────────────────────────────
-     CONSTANTES
-  ───────────────────────────────────────────── */
-
-  // URL base da API no Railway
   const API_URL = 'https://urban-map-api-production.up.railway.app';
 
   const CAT = {
@@ -32,16 +20,13 @@ const APP = (() => {
     light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
   };
 
-  /* ─────────────────────────────────────────────
-     STATE
-  ───────────────────────────────────────────── */
-
+  /* ── STATE ── */
   let userLat      = null;
   let userLng      = null;
   let selectedCat  = null;
-  let selectedFile = null;   // File object (para enviar ao backend)
-  let selectedImg  = null;   // base64 (para preview local)
-  let markerStore  = {};     // id → dados (para o lightbox)
+  let selectedFile = null;
+  let selectedImg  = null;
+  let markerStore  = {};
   let markerCount  = 0;
   let userMarker   = null;
   let accCircle    = null;
@@ -50,10 +35,7 @@ const APP = (() => {
   let currentTheme = 'dark';
   let manualTheme  = null;
 
-  /* ─────────────────────────────────────────────
-     THEME
-  ───────────────────────────────────────────── */
-
+  /* ── THEME ── */
   function autoTheme() {
     const h = new Date().getHours();
     return (h >= 6 && h < 18) ? 'light' : 'dark';
@@ -82,23 +64,16 @@ const APP = (() => {
     applyTheme(next);
   });
 
-  /* ─────────────────────────────────────────────
-     MAP
-  ───────────────────────────────────────────── */
-
+  /* ── MAP ── */
   const map = L.map('map', {
     zoomControl: false, attributionControl: false,
     center: [-22.9, -43.17], zoom: 16,
   });
   tileLayer = L.tileLayer(TILE.dark, { maxZoom: 19 }).addTo(map);
   L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(map);
-
   initTheme();
 
-  /* ─────────────────────────────────────────────
-     GEOLOCATION
-  ───────────────────────────────────────────── */
-
+  /* ── GEOLOCATION ── */
   function setStatus(ok, text) {
     document.getElementById('status-dot').className = ok ? 'located' : '';
     document.getElementById('status-text').textContent = text;
@@ -142,29 +117,17 @@ const APP = (() => {
     if (userLat !== null) map.setView([userLat, userLng], 17, { animate: true });
   });
 
-  /* ─────────────────────────────────────────────
-     RENDERIZAR MARCADOR NO MAPA
-     Usado tanto ao registrar quanto ao carregar
-     ocorrências existentes do banco
-  ───────────────────────────────────────────── */
-
+  /* ── RENDER MARKER ── */
   function renderMarker(ocorrencia) {
-    const { id, categoria, latitude, longitude, foto_url, criado_em } = ocorrencia;
-    const cat  = CAT[categoria];
+    const { id, categoria, latitude, longitude, foto_url, criado_em, descricao } = ocorrencia;
+    const cat = CAT[categoria];
     if (!cat) return;
 
     const ll   = [parseFloat(latitude), parseFloat(longitude)];
     const date = new Date(criado_em).toLocaleDateString('pt-BR');
     const time = new Date(criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-    // Guarda no markerStore para o lightbox
-    markerStore[id] = {
-      img:  foto_url,
-      cat:  categoria,
-      date, time,
-      lat:  parseFloat(latitude),
-      lng:  parseFloat(longitude),
-    };
+    markerStore[id] = { img: foto_url, cat: categoria, date, time, lat: parseFloat(latitude), lng: parseFloat(longitude) };
 
     const icon = L.divIcon({
       className: '',
@@ -175,32 +138,26 @@ const APP = (() => {
       iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -44],
     });
 
+    // Bloco de descrição no popup (só se existir)
+    const descBlock = descricao
+      ? `<div style="font-size:.78rem;color:#8aaccc;line-height:1.45;padding:8px 14px 0;border-top:1px solid #1e3048;font-style:italic;">"${descricao}"</div>`
+      : '';
+
     const popupHtml = `
-      <div style="position:relative;cursor:pointer;overflow:hidden;"
-           onclick="APP.openLightbox(${id})">
+      <div style="position:relative;cursor:pointer;overflow:hidden;" onclick="APP.openLightbox(${id})">
         <img src="${foto_url}" style="width:100%;height:140px;object-fit:cover;display:block;" />
-        <div style="
-          position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-          background:rgba(0,0,0,0);transition:background .2s;"
-          onmouseenter="this.style.background='rgba(0,0,0,.3)'"
-          onmouseleave="this.style.background='rgba(0,0,0,0)'">
-          <div style="background:rgba(0,0,0,.6);border-radius:99px;padding:5px 14px;font-size:.73rem;color:#fff;font-family:'DM Sans',sans-serif;white-space:nowrap;">
-            🔍 Ampliar foto
-          </div>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0);transition:background .2s;"
+             onmouseenter="this.style.background='rgba(0,0,0,.3)'" onmouseleave="this.style.background='rgba(0,0,0,0)'">
+          <div style="background:rgba(0,0,0,.6);border-radius:99px;padding:5px 14px;font-size:.73rem;color:#fff;font-family:'DM Sans',sans-serif;white-space:nowrap;">🔍 Ampliar foto</div>
         </div>
       </div>
       <div style="padding:12px 14px 0;font-family:'DM Sans',sans-serif;">
-        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;color:${cat.color};margin-bottom:4px;">
-          ${cat.emoji} ${cat.label}
-        </div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;color:${cat.color};margin-bottom:4px;">${cat.emoji} ${cat.label}</div>
         <div class="pop-info-date"  style="font-size:.73rem;color:#6a8aaa;">${date} às ${time}</div>
-        <div class="pop-info-coord" style="font-size:.68rem;color:#3a5a7a;margin-top:2px;font-family:monospace;">
-          ${parseFloat(latitude).toFixed(5)}, ${parseFloat(longitude).toFixed(5)}
-        </div>
+        <div class="pop-info-coord" style="font-size:.68rem;color:#3a5a7a;margin-top:2px;font-family:monospace;">${parseFloat(latitude).toFixed(5)}, ${parseFloat(longitude).toFixed(5)}</div>
       </div>
-      <button class="pop-photo-btn" style="color:${cat.color};" onclick="APP.openLightbox(${id})">
-        📷 Ver foto em tela cheia
-      </button>`;
+      ${descBlock}
+      <button class="pop-photo-btn" style="color:${cat.color};" onclick="APP.openLightbox(${id})">📷 Ver foto em tela cheia</button>`;
 
     const popup = L.popup({ className: 'upop', maxWidth: 240, minWidth: 210, autoPanPadding: [20, 80] })
       .setContent(popupHtml);
@@ -208,66 +165,43 @@ const APP = (() => {
     L.marker(ll, { icon }).addTo(map).bindPopup(popup);
   }
 
-  /* ─────────────────────────────────────────────
-     CARREGAR OCORRÊNCIAS DO BANCO AO ABRIR O APP
-  ───────────────────────────────────────────── */
-
+  /* ── LOAD EXISTING OCCURRENCES ── */
   async function carregarOcorrencias() {
     try {
       setStatus(false, 'Carregando…');
-      const res = await fetch(`${API_URL}/ocorrencias?limite=500`);
-      if (!res.ok) throw new Error('Falha ao carregar ocorrências');
+      const res  = await fetch(`${API_URL}/ocorrencias?limite=500`);
+      if (!res.ok) throw new Error('Falha ao carregar');
       const data = await res.json();
 
       if (data.ocorrencias.length === 0) return;
 
-      // Renderiza todos os marcadores
       data.ocorrencias.forEach(o => renderMarker(o));
       markerCount = data.total;
       document.getElementById('marker-count').textContent = markerCount;
 
-      // Ajusta o mapa para mostrar todos os marcadores carregados.
-      // Quando o GPS localizar o usuário, o mapa vai para a posição dele normalmente.
       const bounds = L.latLngBounds(
         data.ocorrencias.map(o => [parseFloat(o.latitude), parseFloat(o.longitude)])
       );
       map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
-
     } catch (err) {
       console.error('Erro ao carregar ocorrências:', err.message);
     }
   }
 
-  // Carrega assim que o mapa estiver pronto
   carregarOcorrencias();
 
-  /* ─────────────────────────────────────────────
-     HELP MODAL
-  ───────────────────────────────────────────── */
-
+  /* ── HELP MODAL ── */
   const helpOverlay = document.getElementById('help-overlay');
   const helpModal   = document.getElementById('help-modal');
 
-  function openHelp() {
-    helpOverlay.classList.add('visible');
-    helpModal.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function closeHelp() {
-    helpOverlay.classList.remove('visible');
-    helpModal.classList.remove('open');
-    document.body.style.overflow = '';
-  }
+  function openHelp() { helpOverlay.classList.add('visible'); helpModal.classList.add('open'); }
+  function closeHelp() { helpOverlay.classList.remove('visible'); helpModal.classList.remove('open'); }
 
   document.getElementById('help-btn').addEventListener('click', openHelp);
   document.getElementById('help-close').addEventListener('click', closeHelp);
   helpOverlay.addEventListener('click', closeHelp);
 
-  /* ─────────────────────────────────────────────
-     BOTTOM SHEET
-  ───────────────────────────────────────────── */
-
+  /* ── SHEET ── */
   const fab     = document.getElementById('fab');
   const sheet   = document.getElementById('sheet');
   const overlay = document.getElementById('overlay');
@@ -277,7 +211,6 @@ const APP = (() => {
     fab.classList.add('open');
     sheet.classList.add('visible');
     overlay.classList.add('visible');
-    sheet.setAttribute('aria-hidden', 'false');
   }
 
   function closeSheet() {
@@ -285,26 +218,36 @@ const APP = (() => {
     fab.classList.remove('open');
     sheet.classList.remove('visible');
     overlay.classList.remove('visible');
-    sheet.setAttribute('aria-hidden', 'true');
     selectedCat  = null;
-    selectedImg  = null;
     selectedFile = null;
+    selectedImg  = null;
     document.querySelectorAll('.cat-btn').forEach(b => {
       b.classList.remove('selected');
       b.setAttribute('aria-checked', 'false');
     });
     document.getElementById('confirm-btn').disabled = true;
+    document.getElementById('confirm-btn').textContent = 'Enviar para análise';
     document.getElementById('img-required-hint').classList.remove('show');
+    document.getElementById('descricao-input').value = '';
+    document.getElementById('char-count').textContent = '0/200';
+    document.getElementById('char-count').className = '';
     resetImgUI();
   }
 
   fab.addEventListener('click', () => sheetOpen ? closeSheet() : openSheet());
   overlay.addEventListener('click', closeSheet);
 
-  /* ─────────────────────────────────────────────
-     CATEGORIES
-  ───────────────────────────────────────────── */
+  /* ── CHAR COUNTER ── */
+  const descricaoInput = document.getElementById('descricao-input');
+  const charCount      = document.getElementById('char-count');
 
+  descricaoInput.addEventListener('input', () => {
+    const len = descricaoInput.value.length;
+    charCount.textContent = `${len}/200`;
+    charCount.className = len >= 200 ? 'at-limit' : len >= 160 ? 'near-limit' : '';
+  });
+
+  /* ── CATEGORIES ── */
   document.querySelectorAll('.cat-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.cat-btn').forEach(b => {
@@ -318,27 +261,20 @@ const APP = (() => {
     });
   });
 
-  /* ─────────────────────────────────────────────
-     IMAGE UPLOAD
-  ───────────────────────────────────────────── */
-
+  /* ── IMAGE UPLOAD ── */
   const inputCamera  = document.getElementById('img-input-camera');
   const inputGallery = document.getElementById('img-input-gallery');
   const previewWrap  = document.getElementById('img-preview-wrap');
   const previewImg   = document.getElementById('img-preview');
   const sourceRow    = document.getElementById('img-source-row');
 
-  document.getElementById('btn-camera').addEventListener('click', () => inputCamera.click());
+  document.getElementById('btn-camera').addEventListener('click',  () => inputCamera.click());
   document.getElementById('btn-gallery').addEventListener('click', () => inputGallery.click());
 
   function handleFileInput(e) {
     const file = e.target.files[0];
     if (!file) return;
-
-    // Guarda o File original para enviar ao backend via FormData
     selectedFile = file;
-
-    // Gera preview local via FileReader
     const reader = new FileReader();
     reader.onload = ev => {
       selectedImg = ev.target.result;
@@ -352,7 +288,7 @@ const APP = (() => {
     e.target.value = '';
   }
 
-  inputCamera.addEventListener('change', handleFileInput);
+  inputCamera.addEventListener('change',  handleFileInput);
   inputGallery.addEventListener('change', handleFileInput);
 
   document.getElementById('img-remove').addEventListener('click', () => {
@@ -361,8 +297,7 @@ const APP = (() => {
   });
 
   function resetImgUI() {
-    selectedImg  = null;
-    selectedFile = null;
+    selectedImg = null; selectedFile = null;
     previewImg.src = '';
     previewWrap.classList.remove('show');
     sourceRow.style.display = '';
@@ -372,33 +307,44 @@ const APP = (() => {
     document.getElementById('confirm-btn').disabled = !(selectedCat && selectedFile);
   }
 
-  /* ─────────────────────────────────────────────
-     CONFIRM — ENVIA PARA A API
-  ───────────────────────────────────────────── */
+  /* ── PENDING NOTICE ── */
+  const pendingNotice = document.getElementById('pending-notice');
+  let pendingTimer = null;
 
+  function showPendingNotice() {
+    pendingNotice.classList.add('show');
+    // Auto-fecha após 8 segundos
+    clearTimeout(pendingTimer);
+    pendingTimer = setTimeout(() => pendingNotice.classList.remove('show'), 8000);
+  }
+
+  document.getElementById('pending-close').addEventListener('click', () => {
+    clearTimeout(pendingTimer);
+    pendingNotice.classList.remove('show');
+  });
+
+  /* ── CONFIRM / SUBMIT ── */
   document.getElementById('confirm-btn').addEventListener('click', async () => {
     if (!selectedCat || !selectedFile) return;
     if (userLat === null) { showToast('⚠ Aguarde a localização ser obtida'); return; }
 
     const confirmBtn = document.getElementById('confirm-btn');
-
-    // Estado de loading — desabilita o botão e muda o texto
     confirmBtn.disabled = true;
     confirmBtn.textContent = 'Enviando…';
 
     try {
-      // Monta o FormData — mesmo formato que o backend espera
       const formData = new FormData();
       formData.append('categoria',  selectedCat);
       formData.append('latitude',   userLat.toString());
       formData.append('longitude',  userLng.toString());
-      formData.append('foto',       selectedFile);  // campo "foto" conforme o backend
+      formData.append('foto',       selectedFile);
+
+      const descricao = descricaoInput.value.trim();
+      if (descricao) formData.append('descricao', descricao);
 
       const res = await fetch(`${API_URL}/ocorrencias`, {
         method: 'POST',
         body:   formData,
-        // NÃO defina Content-Type manualmente — o browser faz isso
-        // automaticamente com o boundary correto para multipart/form-data
       });
 
       if (!res.ok) {
@@ -406,31 +352,20 @@ const APP = (() => {
         throw new Error(erro.erro || `Erro ${res.status}`);
       }
 
-      const data = await res.json();
-      const ocorrencia = data.ocorrencia;
-
-      // Renderiza o marcador no mapa com os dados retornados pelo banco
-      renderMarker(ocorrencia);
-      markerCount++;
-      document.getElementById('marker-count').textContent = markerCount;
-
       closeSheet();
-      showToast('✓ Ocorrência registrada com sucesso!');
+
+      // Mostra o banner de pendência — principal feedback ao usuário
+      showPendingNotice();
 
     } catch (err) {
-      console.error('Erro ao registrar ocorrência:', err.message);
+      console.error('Erro ao registrar:', err.message);
       showToast(`❌ ${err.message}`);
-
-      // Reabilita o botão para o usuário tentar novamente
       confirmBtn.disabled = false;
-      confirmBtn.textContent = 'Registrar ocorrência';
+      confirmBtn.textContent = 'Enviar para análise';
     }
   });
 
-  /* ─────────────────────────────────────────────
-     TOAST
-  ───────────────────────────────────────────── */
-
+  /* ── TOAST ── */
   function showToast(msg) {
     const el = document.getElementById('toast');
     el.textContent = msg;
@@ -439,10 +374,7 @@ const APP = (() => {
     el._t = setTimeout(() => el.classList.remove('show'), 3000);
   }
 
-  /* ─────────────────────────────────────────────
-     LIGHTBOX
-  ───────────────────────────────────────────── */
-
+  /* ── LIGHTBOX ── */
   function openLightbox(id) {
     const d = markerStore[id];
     if (!d || !d.img) return;
@@ -463,20 +395,15 @@ const APP = (() => {
     setTimeout(() => { document.getElementById('lb-img').src = ''; }, 300);
   }
 
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeLightbox(); closeHelp(); } });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closeLightbox(); closeHelp(); }
+  });
 
-  /* ─────────────────────────────────────────────
-     PWA
-  ───────────────────────────────────────────── */
-
+  /* ── PWA ── */
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js', { scope: '/urban-map/' }).catch(() => {});
   }
   window.addEventListener('beforeinstallprompt', e => e.preventDefault());
-
-  /* ─────────────────────────────────────────────
-     PUBLIC API
-  ───────────────────────────────────────────── */
 
   return { openLightbox, closeLightbox };
 
