@@ -18,10 +18,9 @@
 </head>
 <body>
 
-  <!-- Map canvas -->
   <div id="map"></div>
 
-  <!-- ── HEADER ── -->
+  <!-- Header -->
   <header id="header">
     <h1>Urban<span>Map</span></h1>
     <div style="display:flex;align-items:center;gap:8px;">
@@ -29,7 +28,6 @@
         <div id="status-dot"></div>
         <span id="status-text">Localizando…</span>
       </div>
-      <!-- Help button -->
       <button id="help-btn" title="Sobre o UrbanMap" aria-label="Abrir informações sobre o projeto">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="10"/>
@@ -40,10 +38,7 @@
     </div>
   </header>
 
-  <!-- Counter -->
   <div id="counter"><strong id="marker-count">0</strong> ocorrências</div>
-
-  <!-- Theme toggle -->
   <button id="theme-btn" title="Alternar tema" aria-label="Alternar tema claro/escuro">🌙</button>
 
   <!-- Legend -->
@@ -56,18 +51,14 @@
     <div class="leg-item"><div class="leg-dot" style="background:var(--c-inund)"></div>Inundação</div>
   </div>
 
-  <!-- Locate button -->
   <button id="locate-btn" title="Centralizar minha localização" aria-label="Centralizar localização">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="3"/>
-      <line x1="12" y1="2" x2="12" y2="6"/>
-      <line x1="12" y1="18" x2="12" y2="22"/>
-      <line x1="2" y1="12" x2="6" y2="12"/>
-      <line x1="18" y1="12" x2="22" y2="12"/>
+      <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+      <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
     </svg>
   </button>
 
-  <!-- FAB -->
   <button id="fab" title="Registrar ocorrência" aria-label="Registrar nova ocorrência">
     <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-fg)" stroke-width="2.5" stroke-linecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/>
@@ -75,14 +66,13 @@
     </svg>
   </button>
 
-  <!-- Overlay (shared by sheet and help modal) -->
   <div id="overlay" role="presentation"></div>
 
   <!-- ── BOTTOM SHEET ── -->
   <div id="sheet" role="dialog" aria-modal="true" aria-label="Nova ocorrência">
     <div class="sheet-handle" aria-hidden="true"></div>
     <h2>Nova ocorrência</h2>
-    <p class="subtitle">Selecione o tipo de problema, tire ou escolha uma foto e registre</p>
+    <p class="subtitle">Selecione o tipo, descreva e envie uma foto — nossa equipe vai revisar antes de publicar</p>
 
     <!-- Categories -->
     <div class="cat-grid" role="radiogroup" aria-label="Tipo de ocorrência">
@@ -118,7 +108,25 @@
       </button>
     </div>
 
-    <!-- Image upload – obrigatório -->
+    <!-- Descrição -->
+    <div class="desc-section">
+      <label class="upload-label" for="descricao-input">
+        Descrição
+        <span style="font-size:.65rem;font-weight:400;color:var(--muted);margin-left:4px;">(opcional)</span>
+      </label>
+      <div class="textarea-wrap">
+        <textarea
+          id="descricao-input"
+          maxlength="200"
+          placeholder="Ex: Buraco grande perto da esquina, dificulta passagem de cadeirantes…"
+          rows="3"
+          aria-label="Descrição do problema"
+        ></textarea>
+        <span id="char-count">0/200</span>
+      </div>
+    </div>
+
+    <!-- Image upload -->
     <div class="upload-section">
       <label class="upload-label">
         Foto do problema
@@ -145,11 +153,31 @@
       <input type="file" id="img-input-gallery" accept="image/*" />
     </div>
 
-    <button id="confirm-btn" disabled type="button">Registrar ocorrência</button>
+    <!-- Aviso de moderação -->
+    <div class="moderation-notice">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      Sua ocorrência será analisada antes de aparecer no mapa. Isso pode levar algumas horas.
+    </div>
+
+    <button id="confirm-btn" disabled type="button">Enviar para análise</button>
   </div>
 
   <!-- Toast -->
   <div id="toast" role="status" aria-live="polite"></div>
+
+  <!-- ── PENDING NOTICE (aparece após envio bem-sucedido) ── -->
+  <div id="pending-notice" aria-live="polite">
+    <div class="pending-inner">
+      <div class="pending-icon">⏳</div>
+      <div class="pending-text">
+        <strong>Ocorrência enviada!</strong>
+        <span>Ela aparecerá no mapa após revisão da nossa equipe.</span>
+      </div>
+      <button id="pending-close" aria-label="Fechar aviso">✕</button>
+    </div>
+  </div>
 
   <!-- ── LIGHTBOX ── -->
   <div id="lightbox" role="dialog" aria-modal="true" aria-label="Foto da ocorrência"
@@ -173,8 +201,6 @@
   <div id="help-overlay" role="presentation"></div>
   <div id="help-modal" role="dialog" aria-modal="true" aria-label="Sobre o UrbanMap">
     <div class="help-inner">
-
-      <!-- Header -->
       <div class="help-header">
         <div class="help-logo">
           <span class="help-logo-icon">🗺️</span>
@@ -185,47 +211,23 @@
         </div>
         <button id="help-close" aria-label="Fechar">✕</button>
       </div>
-
-      <!-- Mission -->
       <div class="help-section">
         <div class="help-section-label">🎯 Nossa missão</div>
-        <p class="help-text">
-          O UrbanMap é uma ferramenta cidadã para <strong>documentar e reportar problemas de acessibilidade e infraestrutura urbana</strong> — buracos, desníveis, falta de iluminação, rampas danificadas, obstruções e áreas de inundação.
-        </p>
-        <p class="help-text">
-          Qualquer pessoa pode registrar uma ocorrência com foto e localização GPS em segundos, diretamente do celular, sem precisar de cadastro.
-        </p>
+        <p class="help-text">O UrbanMap é uma ferramenta cidadã para <strong>documentar e reportar problemas de acessibilidade e infraestrutura urbana</strong> — buracos, desníveis, falta de iluminação, rampas danificadas, obstruções e áreas de inundação.</p>
+        <p class="help-text">Qualquer pessoa pode registrar uma ocorrência com foto e localização GPS em segundos, diretamente do celular, sem precisar de cadastro.</p>
       </div>
-
-      <!-- How it works -->
       <div class="help-section">
         <div class="help-section-label">⚙️ Como funciona</div>
         <div class="help-steps">
-          <div class="help-step">
-            <div class="step-num">1</div>
-            <div class="step-text">Toque em <strong>+</strong> para abrir o formulário de registro</div>
-          </div>
-          <div class="help-step">
-            <div class="step-num">2</div>
-            <div class="step-text">Selecione a <strong>categoria</strong> do problema encontrado</div>
-          </div>
-          <div class="help-step">
-            <div class="step-num">3</div>
-            <div class="step-text">Tire ou envie uma <strong>foto</strong> do problema</div>
-          </div>
-          <div class="help-step">
-            <div class="step-num">4</div>
-            <div class="step-text">Confirme — o marcador é fixado nas suas <strong>coordenadas GPS</strong></div>
-          </div>
+          <div class="help-step"><div class="step-num">1</div><div class="step-text">Toque em <strong>+</strong> para abrir o formulário de registro</div></div>
+          <div class="help-step"><div class="step-num">2</div><div class="step-text">Selecione a <strong>categoria</strong> e descreva o problema</div></div>
+          <div class="help-step"><div class="step-num">3</div><div class="step-text">Tire ou envie uma <strong>foto</strong> do problema</div></div>
+          <div class="help-step"><div class="step-num">4</div><div class="step-text">Envie — a ocorrência aparece no mapa após <strong>revisão</strong></div></div>
         </div>
       </div>
-
-      <!-- Monthly report -->
       <div class="help-section help-report-box">
         <div class="help-section-label">📋 Relatório mensal ao poder público</div>
-        <p class="help-text">
-          Ao final de cada mês, todas as ocorrências registradas são compiladas em um <strong>relatório oficial</strong> entregue aos órgãos responsáveis, contendo:
-        </p>
+        <p class="help-text">Ao final de cada mês, todas as ocorrências registradas são compiladas em um <strong>relatório oficial</strong> entregue aos órgãos responsáveis, contendo:</p>
         <ul class="help-list">
           <li>📍 Localização precisa de cada problema</li>
           <li>📷 Foto enviada pelo cidadão</li>
@@ -234,23 +236,17 @@
           <li>🔥 Mapa de calor das áreas mais prejudicadas</li>
         </ul>
       </div>
-
-      <!-- Support -->
       <div class="help-section help-support">
         <div class="help-section-label">✉️ Suporte e contato</div>
         <p class="help-text">Dúvidas, sugestões ou problemas técnicos? Fale conosco:</p>
         <a href="mailto:suporte@urbanmap.app" class="help-email">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="4" width="20" height="16" rx="2"/>
-            <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+            <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
           </svg>
           suporte@urbanmap.app
         </a>
       </div>
-
-      <!-- Version -->
       <div class="help-version">UrbanMap v1.0 · Frontend Preview</div>
-
     </div>
   </div>
 
