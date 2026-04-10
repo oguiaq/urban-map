@@ -21,6 +21,14 @@ const APP = (() => {
     light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
   };
 
+  // Determina o tema inicial ANTES de criar qualquer coisa
+  // para que o tileLayer já seja criado com a URL correta
+  function autoTheme() {
+    const h = new Date().getHours();
+    return (h >= 6 && h < 18) ? 'light' : 'dark';
+  }
+  const INITIAL_THEME = sessionStorage.getItem('um_theme') || autoTheme();
+
   /* ── STATE ── */
   let userLat        = null;
   let userLng        = null;
@@ -42,11 +50,6 @@ const APP = (() => {
   let initialFitDone = false;
 
   /* ── THEME ── */
-  function autoTheme() {
-    const h = new Date().getHours();
-    return (h >= 6 && h < 18) ? 'light' : 'dark';
-  }
-
   function applyTheme(theme) {
     currentTheme = theme;
     document.documentElement.setAttribute('data-theme', theme);
@@ -58,6 +61,7 @@ const APP = (() => {
   function initTheme() {
     const saved = sessionStorage.getItem('um_theme');
     manualTheme = saved || null;
+    // applyTheme is called AFTER tileLayer is created, so setUrl works correctly
     applyTheme(manualTheme || autoTheme());
   }
 
@@ -75,15 +79,16 @@ const APP = (() => {
     zoomControl: false, attributionControl: false,
     center: [-22.9, -43.17], zoom: 15,
   });
-  tileLayer = L.tileLayer(TILE.dark, { maxZoom: 19 }).addTo(map);
+  // Cria o tileLayer já com a URL correta para o tema inicial
+  tileLayer = L.tileLayer(TILE[INITIAL_THEME], { maxZoom: 19 }).addTo(map);
   L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(map);
 
-  // Força o Leaflet a recalcular o tamanho do container após o DOM estabilizar.
-  // Resolve mapa preto causado por container sem dimensões definidas no momento do init.
-  setTimeout(() => map.invalidateSize(), 100);
-  window.addEventListener('resize', () => map.invalidateSize());
-
+  // Aplica o tema (agora tileLayer já existe, setUrl vai funcionar)
   initTheme();
+
+  // Força o Leaflet a recalcular o tamanho após DOM estabilizar
+  setTimeout(() => map.invalidateSize(), 200);
+  window.addEventListener('resize', () => map.invalidateSize());
 
   /* ── GEOLOCATION ── */
   function setStatus(ok, text) {
@@ -448,7 +453,12 @@ const APP = (() => {
 
   /* ── PWA ── */
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js', { scope: '/urban-map/' }).catch(() => {});
+    // Desregistra workers antigos que possam estar cacheando tiles incorretamente
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(reg => reg.unregister());
+    }).then(() => {
+      navigator.serviceWorker.register('./sw.js', { scope: '/urban-map/' }).catch(() => {});
+    });
   }
   window.addEventListener('beforeinstallprompt', e => e.preventDefault());
 
