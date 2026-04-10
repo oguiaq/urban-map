@@ -90,6 +90,16 @@ const APP = (() => {
   setTimeout(() => map.invalidateSize(), 200);
   window.addEventListener('resize', () => map.invalidateSize());
 
+  // Event delegation para botões de lightbox dentro dos popups do Leaflet
+  // (não podemos usar onclick inline por restrição de CSP)
+  document.getElementById('map').addEventListener('click', e => {
+    const el = e.target.closest('[data-lightbox-id]');
+    if (el) {
+      const id = parseInt(el.dataset.lightboxId, 10);
+      if (id) openLightbox(id);
+    }
+  });
+
   /* ── GEOLOCATION ── */
   function setStatus(ok, text) {
     document.getElementById('status-dot').className = ok ? 'located' : '';
@@ -174,11 +184,10 @@ const APP = (() => {
       : '';
 
     const popupHtml = `
-      <div style="position:relative;cursor:pointer;overflow:hidden;" onclick="APP.openLightbox(${id})">
+      <div style="position:relative;cursor:pointer;overflow:hidden;" data-lightbox-id="${id}">
         <img src="${foto_url}" style="width:100%;height:140px;object-fit:cover;display:block;" />
-        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0);transition:background .2s;"
-             onmouseenter="this.style.background='rgba(0,0,0,.3)'" onmouseleave="this.style.background='rgba(0,0,0,0)'">
-          <div style="background:rgba(0,0,0,.6);border-radius:99px;padding:5px 14px;font-size:.73rem;color:#fff;font-family:'DM Sans',sans-serif;white-space:nowrap;">🔍 Ampliar foto</div>
+        <div class="popup-photo-overlay">
+          <div class="popup-photo-hint">🔍 Ampliar foto</div>
         </div>
       </div>
       <div style="padding:12px 14px 0;font-family:'DM Sans',sans-serif;">
@@ -187,7 +196,7 @@ const APP = (() => {
         <div class="pop-info-coord" style="font-size:.68rem;color:#3a5a7a;margin-top:2px;font-family:monospace;">${parseFloat(latitude).toFixed(5)}, ${parseFloat(longitude).toFixed(5)}</div>
       </div>
       ${descBlock}
-      <button class="pop-photo-btn" style="color:${cat.color};" onclick="APP.openLightbox(${id})">📷 Ver foto em tela cheia</button>`;
+      <button class="pop-photo-btn" style="color:${cat.color};" data-lightbox-id="${id}">📷 Ver foto em tela cheia</button>`;
 
     const popup = L.popup({ className: 'upop', maxWidth: 240, minWidth: 210, autoPanPadding: [20, 80] })
       .setContent(popupHtml);
@@ -446,6 +455,12 @@ const APP = (() => {
     document.getElementById('lightbox').classList.remove('open');
     setTimeout(() => { document.getElementById('lb-img').src = ''; }, 300);
   }
+
+  // Lightbox close — moved from inline onclick in HTML (CSP requires no inline handlers)
+  document.getElementById('lb-close').addEventListener('click', closeLightbox);
+  document.getElementById('lightbox').addEventListener('click', e => {
+    if (e.target === e.currentTarget || e.target.id === 'lb-img-wrap') closeLightbox();
+  });
 
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeLightbox(); closeHelp(); }
