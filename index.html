@@ -21,7 +21,6 @@
 
   <div id="map"></div>
 
-  <!-- Header -->
   <header id="header">
     <h1>Urban<span>Map</span></h1>
     <div style="display:flex;align-items:center;gap:8px;">
@@ -42,7 +41,6 @@
   <div id="counter"><strong id="marker-count">0</strong> ocorrências</div>
   <button id="theme-btn" title="Alternar tema" aria-label="Alternar tema claro/escuro">🌙</button>
 
-  <!-- Legend -->
   <div id="legend" aria-label="Legenda de categorias">
     <div class="leg-item"><div class="leg-dot" style="background:var(--c-buraco)"></div>Buraco</div>
     <div class="leg-item"><div class="leg-dot" style="background:var(--c-desnivel)"></div>Desnível</div>
@@ -60,7 +58,6 @@
     </svg>
   </button>
 
-  <!-- Refresh button -->
   <button id="refresh-btn" title="Atualizar mapa" aria-label="Buscar novas ocorrências">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
@@ -69,7 +66,7 @@
   </button>
 
   <button id="fab" title="Registrar ocorrência" aria-label="Registrar nova ocorrência">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-fg)" stroke-width="2.5" stroke-linecap="round">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/>
       <line x1="5" y1="12" x2="19" y2="12"/>
     </svg>
@@ -77,80 +74,44 @@
 
   <div id="overlay" role="presentation"></div>
 
-  <!-- ── BOTTOM SHEET ── -->
+  <!-- BOTTOM SHEET -->
   <div id="sheet" role="dialog" aria-modal="true" aria-label="Nova ocorrência">
     <div class="sheet-handle" aria-hidden="true"></div>
     <h2>Nova ocorrência</h2>
     <p class="subtitle">Selecione o tipo, descreva e envie uma foto — nossa equipe vai revisar antes de publicar</p>
 
-    <!-- Categories -->
     <div class="cat-grid" role="radiogroup" aria-label="Tipo de ocorrência">
-      <button class="cat-btn" data-cat="buraco" role="radio" aria-checked="false">
-        <span class="icon" aria-hidden="true">🕳️</span>
-        <span class="label">Buraco</span>
-        <span class="desc">Cratera ou buraco na via</span>
-      </button>
-      <button class="cat-btn" data-cat="desnivel" role="radio" aria-checked="false">
-        <span class="icon" aria-hidden="true">⚠️</span>
-        <span class="label">Desnível</span>
-        <span class="desc">Irregularidade no piso</span>
-      </button>
-      <button class="cat-btn" data-cat="ilum" role="radio" aria-checked="false">
-        <span class="icon" aria-hidden="true">💡</span>
-        <span class="label">Falta de Iluminação</span>
-        <span class="desc">Poste apagado ou ausente</span>
-      </button>
-      <button class="cat-btn" data-cat="rampa" role="radio" aria-checked="false">
-        <span class="icon" aria-hidden="true">♿</span>
-        <span class="label">Rampa de Acesso</span>
-        <span class="desc">Rampa danificada ou ausente</span>
-      </button>
-      <button class="cat-btn" data-cat="obs" role="radio" aria-checked="false">
-        <span class="icon" aria-hidden="true">🚧</span>
-        <span class="label">Obstrução</span>
-        <span class="desc">Via ou calçada bloqueada</span>
-      </button>
-      <button class="cat-btn" data-cat="inund" role="radio" aria-checked="false">
-        <span class="icon" aria-hidden="true">🌊</span>
-        <span class="label">Inundação</span>
-        <span class="desc">Alagamento ou área inundada</span>
-      </button>
+      <button class="cat-btn" data-cat="buraco"   role="radio" aria-checked="false"><span class="icon">🕳️</span><span class="label">Buraco</span><span class="desc">Cratera ou buraco na via</span></button>
+      <button class="cat-btn" data-cat="desnivel" role="radio" aria-checked="false"><span class="icon">⚠️</span><span class="label">Desnível</span><span class="desc">Irregularidade no piso</span></button>
+      <button class="cat-btn" data-cat="ilum"     role="radio" aria-checked="false"><span class="icon">💡</span><span class="label">Falta de Iluminação</span><span class="desc">Poste apagado ou ausente</span></button>
+      <button class="cat-btn" data-cat="rampa"    role="radio" aria-checked="false"><span class="icon">♿</span><span class="label">Rampa de Acesso</span><span class="desc">Rampa danificada ou ausente</span></button>
+      <button class="cat-btn" data-cat="obs"      role="radio" aria-checked="false"><span class="icon">🚧</span><span class="label">Obstrução</span><span class="desc">Via ou calçada bloqueada</span></button>
+      <button class="cat-btn" data-cat="inund"    role="radio" aria-checked="false"><span class="icon">🌊</span><span class="label">Inundação</span><span class="desc">Alagamento ou área inundada</span></button>
     </div>
 
-    <!-- Descrição -->
     <div class="desc-section">
       <label class="upload-label" for="descricao-input">
         Descrição
         <span style="font-size:.65rem;font-weight:400;color:var(--muted);margin-left:4px;">(opcional)</span>
       </label>
       <div class="textarea-wrap">
-        <textarea
-          id="descricao-input"
-          maxlength="200"
+        <textarea id="descricao-input" maxlength="200" rows="3"
           placeholder="Ex: Buraco grande perto da esquina, dificulta passagem de cadeirantes…"
-          rows="3"
-          aria-label="Descrição do problema"
-        ></textarea>
+          aria-label="Descrição do problema"></textarea>
         <span id="char-count">0/200</span>
       </div>
     </div>
 
-    <!-- Image upload -->
     <div class="upload-section">
       <label class="upload-label">
-        Foto do problema
-        <span class="required-badge">obrigatório</span>
+        Foto do problema <span class="required-badge">obrigatório</span>
       </label>
       <div class="img-source-row" id="img-source-row">
-        <button class="img-src-btn" id="btn-camera" type="button" aria-label="Abrir câmera">
-          <span class="btn-icon" aria-hidden="true">📷</span>
-          <span>Câmera</span>
-          <span class="btn-sub">Tirar foto agora</span>
+        <button class="img-src-btn" id="btn-camera"  type="button" aria-label="Abrir câmera">
+          <span class="btn-icon">📷</span><span>Câmera</span><span class="btn-sub">Tirar foto agora</span>
         </button>
         <button class="img-src-btn" id="btn-gallery" type="button" aria-label="Escolher da galeria">
-          <span class="btn-icon" aria-hidden="true">🖼️</span>
-          <span>Galeria</span>
-          <span class="btn-sub">Escolher imagem</span>
+          <span class="btn-icon">🖼️</span><span>Galeria</span><span class="btn-sub">Escolher imagem</span>
         </button>
       </div>
       <div id="img-preview-wrap">
@@ -162,7 +123,6 @@
       <input type="file" id="img-input-gallery" accept="image/*" />
     </div>
 
-    <!-- Aviso de moderação -->
     <div class="moderation-notice">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -173,10 +133,9 @@
     <button id="confirm-btn" disabled type="button">Enviar para análise</button>
   </div>
 
-  <!-- Toast -->
   <div id="toast" role="status" aria-live="polite"></div>
 
-  <!-- ── PENDING NOTICE (aparece após envio bem-sucedido) ── -->
+  <!-- PENDING NOTICE -->
   <div id="pending-notice" aria-live="polite">
     <div class="pending-inner">
       <div class="pending-icon">⏳</div>
@@ -188,9 +147,8 @@
     </div>
   </div>
 
-  <!-- ── LIGHTBOX ── -->
-  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Foto da ocorrência"
->
+  <!-- LIGHTBOX — sem onclick inline -->
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Foto da ocorrência">
     <div id="lb-header">
       <div>
         <div id="lb-title"></div>
@@ -206,7 +164,7 @@
     </div>
   </div>
 
-  <!-- ── HELP MODAL ── -->
+  <!-- HELP MODAL -->
   <div id="help-overlay" role="presentation"></div>
   <div id="help-modal" role="dialog" aria-modal="true" aria-label="Sobre o UrbanMap">
     <div class="help-inner">
@@ -248,12 +206,18 @@
       <div class="help-section help-support">
         <div class="help-section-label">✉️ Suporte e contato</div>
         <p class="help-text">Dúvidas, sugestões ou problemas técnicos? Fale conosco:</p>
-        <a href="/cdn-cgi/l/email-protection#99eaece9f6ebedfcd9ecebfbf8f7f4f8e9b7f8e9e9" class="help-email">
+        <a href="mailto:suporte@urbanmap.app" class="help-email">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
           </svg>
-          <span class="__cf_email__" data-cfemail="0f7c7a7f607d7b6a4f7a7d6d6e61626e7f216e7f7f">[email&#160;protected]</span>
+          suporte@urbanmap.app
         </a>
       </div>
       <div class="help-version">UrbanMap v1.0 · Frontend Preview</div>
-    </d
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
