@@ -394,6 +394,23 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 [data-theme="light"] .pop-photo-btn { border-top-color: #c8d6e5; }
 [data-theme="light"] .pop-photo-btn:hover { background: rgba(0,0,0,.04); }
 
+
+/* ── POPUP PHOTO HOVER OVERLAY (substitui onmouseenter/onmouseleave inline) ── */
+.popup-photo-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0);
+  transition: background .2s;
+}
+.popup-photo-overlay:hover { background: rgba(0,0,0,.3); }
+.popup-photo-hint {
+  background: rgba(0,0,0,.6); border-radius: 99px;
+  padding: 5px 14px; font-size: .73rem; color: #fff;
+  font-family: 'DM Sans', sans-serif; white-space: nowrap;
+  opacity: 0; transition: opacity .2s;
+}
+.popup-photo-overlay:hover .popup-photo-hint { opacity: 1; }
+
 /* ── LIGHTBOX ── */
 #lightbox {
   position: fixed; inset: 0; z-index: 900;
