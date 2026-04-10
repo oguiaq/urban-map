@@ -77,4 +77,4 @@ Ao final de cada mês, todas as ocorrências aprovadas são compiladas em um **r
 
 ## Suporte
 
-✉️ suporte@urbanmap.app
+✉️ contato.oguiaq@gmail.com
