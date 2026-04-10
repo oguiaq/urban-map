@@ -171,6 +171,19 @@
     .status-badge.rejeitada { background: rgba(255,77,109,.15); color: var(--red);    }
     .card-meta { font-size: .75rem; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
     .card-coords { font-family: monospace; font-size: .7rem; color: var(--muted); background: var(--surface2); border-radius: 6px; padding: 4px 8px; }
+    .card-address {
+      font-size: .72rem; color: var(--muted); line-height: 1.45;
+      display: flex; align-items: flex-start; gap: 5px; margin-top: 2px;
+    }
+    .card-address svg { flex-shrink: 0; margin-top: 1px; opacity: .6; }
+    .addr-skeleton {
+      height: 12px; border-radius: 4px;
+      background: linear-gradient(90deg, var(--border) 25%, var(--surface2) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+      width: 80%;
+    }
+    @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
     .card-desc { font-size: .78rem; color: #8aaccc; font-style: italic; line-height: 1.4; padding-top: 4px; border-top: 1px solid var(--border); }
 
     .card-actions { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--border); }
@@ -502,6 +515,51 @@
     }
 
     // ── CRIAR CARD ──
+    // ── GEOCODIFICAÇÃO REVERSA (Nominatim / OpenStreetMap) ──
+    // Cache em memória para não repetir chamadas para a mesma coordenada
+    const geocodeCache = {};
+
+    async function geocodeReverse(lat, lng) {
+      const key = `${parseFloat(lat).toFixed(4)},${parseFloat(lng).toFixed(4)}`;
+      if (geocodeCache[key]) return geocodeCache[key];
+
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=pt-BR`,
+          { headers: { 'Accept-Language': 'pt-BR,pt;q=0.9' } }
+        );
+        if (!res.ok) throw new Error('Nominatim error');
+        const data = await res.json();
+        const a = data.address || {};
+
+        // Monta as partes do endereço em ordem de especificidade
+        const bairro  = a.suburb || a.neighbourhood || a.quarter || a.city_district || '';
+        const cidade  = a.city || a.town || a.village || a.municipality || '';
+        const estado  = a.state || '';
+        const pais    = a.country || '';
+
+        const partes = [bairro, cidade, estado, pais].filter(Boolean);
+        const resultado = partes.length ? partes.join(', ') : 'Endereço não encontrado';
+
+        geocodeCache[key] = resultado;
+        return resultado;
+      } catch {
+        return null;
+      }
+    }
+
+    // Preenche o bloco de endereço de um card após a geocodificação
+    async function preencherEndereco(cardEl, lat, lng) {
+      const addrEl = cardEl.querySelector('.card-address-text');
+      if (!addrEl) return;
+      const endereco = await geocodeReverse(lat, lng);
+      if (endereco) {
+        addrEl.textContent = endereco;
+      } else {
+        addrEl.textContent = 'Endereço indisponível';
+      }
+    }
+
     function criarCard(o) {
       const cat  = CAT[o.categoria] || { emoji: '📍', label: o.categoria, color: '#aaa' };
       const date = new Date(o.criado_em).toLocaleDateString('pt-BR');
