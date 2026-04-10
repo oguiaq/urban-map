@@ -45,11 +45,24 @@
 /* ── RESET ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; transition: background .4s, color .4s; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; height: 100dvh; overflow: hidden; transition: background .4s, color .4s; }
 
 /* ── MAP ── */
-#map { position: fixed; inset: 0; z-index: 0; }
-.leaflet-tile-pane { filter: var(--tile-filter); transition: filter .6s; }
+#map {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+.leaflet-tile-pane {
+  filter: saturate(0.65) brightness(0.82);
+  filter: var(--tile-filter, saturate(0.65) brightness(0.82));
+  transition: filter .6s;
+}
+[data-theme="light"] .leaflet-tile-pane {
+  filter: saturate(1.05) brightness(1.0);
+}
 
 /* ── HEADER ── */
 #header {
