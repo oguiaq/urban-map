@@ -77,6 +77,12 @@ const APP = (() => {
   });
   tileLayer = L.tileLayer(TILE.dark, { maxZoom: 19 }).addTo(map);
   L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(map);
+
+  // Força o Leaflet a recalcular o tamanho do container após o DOM estabilizar.
+  // Resolve mapa preto causado por container sem dimensões definidas no momento do init.
+  setTimeout(() => map.invalidateSize(), 100);
+  window.addEventListener('resize', () => map.invalidateSize());
+
   initTheme();
 
   /* ── GEOLOCATION ── */
