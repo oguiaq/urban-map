@@ -121,6 +121,22 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--t
 #locate-btn:active { transform: scale(.92); }
 #locate-btn.active { color: var(--accent); border-color: var(--accent); }
 
+/* ── REFRESH ── */
+#refresh-btn {
+  position: fixed; bottom: 36px; left: 82px; z-index: 200;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--border); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; color: var(--muted);
+  box-shadow: 0 4px 14px var(--shadow); transition: color .2s, border-color .2s, transform .15s;
+}
+#refresh-btn:active { transform: scale(.92); }
+#refresh-btn:hover  { color: var(--accent); border-color: var(--accent); }
+
+@keyframes spin-once {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* ── FAB ── */
 #fab {
   position: fixed; bottom: 36px; right: 24px; z-index: 200;
