@@ -4,7 +4,8 @@
 
 const APP = (() => {
 
-  const API_URL = 'https://urban-map-api-production.up.railway.app';
+  const API_URL            = 'https://urban-map-api-production.up.railway.app';
+  const REFRESH_INTERVAL_MS = 60_000; // busca novos pins a cada 60 segundos
 
   const CAT = {
     buraco:   { color: '#ff6b35', emoji: '🕳️', label: 'Buraco'             },
@@ -26,7 +27,8 @@ const APP = (() => {
   let selectedCat  = null;
   let selectedFile = null;
   let selectedImg  = null;
-  let markerStore  = {};
+  let markerStore  = {};       // id → dados (para lightbox)
+  let leafletMarkers = {};     // id → instância Leaflet (para não duplicar)
   let markerCount  = 0;
   let userMarker   = null;
   let accCircle    = null;
@@ -34,6 +36,8 @@ const APP = (() => {
   let tileLayer    = null;
   let currentTheme = 'dark';
   let manualTheme  = null;
+  let firstLoad    = true;     // controla o fitBounds — só na primeira carga
+  let refreshTimer = null;
 
   /* ── THEME ── */
   function autoTheme() {
@@ -118,8 +122,13 @@ const APP = (() => {
   });
 
   /* ── RENDER MARKER ── */
+  // Só adiciona ao mapa se ainda não existir (evita duplicatas no refresh)
   function renderMarker(ocorrencia) {
     const { id, categoria, latitude, longitude, foto_url, criado_em, descricao } = ocorrencia;
+
+    // Já existe no mapa — ignora
+    if (leafletMarkers[id]) return;
+
     const cat = CAT[categoria];
     if (!cat) return;
 
@@ -138,7 +147,6 @@ const APP = (() => {
       iconSize: [38, 38], iconAnchor: [19, 38], popupAnchor: [0, -44],
     });
 
-    // Bloco de descrição no popup (só se existir)
     const descBlock = descricao
       ? `<div style="font-size:.78rem;color:#8aaccc;line-height:1.45;padding:8px 14px 0;border-top:1px solid #1e3048;font-style:italic;">"${descricao}"</div>`
       : '';
@@ -162,41 +170,82 @@ const APP = (() => {
     const popup = L.popup({ className: 'upop', maxWidth: 240, minWidth: 210, autoPanPadding: [20, 80] })
       .setContent(popupHtml);
 
-    L.marker(ll, { icon }).addTo(map).bindPopup(popup);
+    const marker = L.marker(ll, { icon }).addTo(map).bindPopup(popup);
+
+    // Guarda referência para não duplicar
+    leafletMarkers[id] = marker;
   }
 
-  /* ── LOAD EXISTING OCCURRENCES ── */
-  async function carregarOcorrencias() {
+  /* ── REFRESH BUTTON SPIN ── */
+  function setRefreshLoading(loading) {
+    const btn = document.getElementById('refresh-btn');
+    if (!btn) return;
+    btn.style.animation = loading ? 'spin-once .6s linear infinite' : '';
+    btn.title = loading ? 'Atualizando…' : 'Atualizar mapa';
+  }
+
+  /* ── LOAD / REFRESH OCCURRENCES ── */
+  async function carregarOcorrencias(isManual = false) {
     try {
-      setStatus(false, 'Carregando…');
+      if (isManual) setRefreshLoading(true);
+      else if (firstLoad) setStatus(false, 'Carregando…');
+
       const res  = await fetch(`${API_URL}/ocorrencias?limite=500`);
       if (!res.ok) throw new Error('Falha ao carregar');
       const data = await res.json();
 
-      if (data.ocorrencias.length === 0) return;
+      const antes = Object.keys(leafletMarkers).length;
 
       data.ocorrencias.forEach(o => renderMarker(o));
+
+      const novos = Object.keys(leafletMarkers).length - antes;
       markerCount = data.total;
       document.getElementById('marker-count').textContent = markerCount;
 
-      const bounds = L.latLngBounds(
-        data.ocorrencias.map(o => [parseFloat(o.latitude), parseFloat(o.longitude)])
-      );
-      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
+      // fitBounds só na primeira carga e se houver marcadores
+      if (firstLoad && data.ocorrencias.length > 0) {
+        const bounds = L.latLngBounds(
+          data.ocorrencias.map(o => [parseFloat(o.latitude), parseFloat(o.longitude)])
+        );
+        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
+        firstLoad = false;
+      }
+
+      // Avisa sobre novos pins encontrados no refresh (não na primeira carga)
+      if (!firstLoad && novos > 0 && !isManual) {
+        showToast(`🗺 ${novos} nova${novos > 1 ? 's ocorrências' : ' ocorrência'} no mapa`);
+      }
+      if (isManual) {
+        showToast(novos > 0
+          ? `🗺 ${novos} nova${novos > 1 ? 's ocorrências' : ' ocorrência'} carregada${novos > 1 ? 's' : ''}`
+          : '✓ Mapa atualizado');
+      }
+
     } catch (err) {
       console.error('Erro ao carregar ocorrências:', err.message);
+      if (isManual) showToast('❌ Erro ao atualizar');
+    } finally {
+      if (isManual) setRefreshLoading(false);
     }
   }
 
+  // Primeira carga
   carregarOcorrencias();
+
+  // Auto-refresh silencioso a cada 60s
+  refreshTimer = setInterval(() => carregarOcorrencias(false), REFRESH_INTERVAL_MS);
+
+  // Botão de refresh manual
+  const refreshBtn = document.getElementById('refresh-btn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => carregarOcorrencias(true));
+  }
 
   /* ── HELP MODAL ── */
   const helpOverlay = document.getElementById('help-overlay');
   const helpModal   = document.getElementById('help-modal');
-
-  function openHelp() { helpOverlay.classList.add('visible'); helpModal.classList.add('open'); }
+  function openHelp()  { helpOverlay.classList.add('visible');    helpModal.classList.add('open');    }
   function closeHelp() { helpOverlay.classList.remove('visible'); helpModal.classList.remove('open'); }
-
   document.getElementById('help-btn').addEventListener('click', openHelp);
   document.getElementById('help-close').addEventListener('click', closeHelp);
   helpOverlay.addEventListener('click', closeHelp);
@@ -292,8 +341,7 @@ const APP = (() => {
   inputGallery.addEventListener('change', handleFileInput);
 
   document.getElementById('img-remove').addEventListener('click', () => {
-    resetImgUI();
-    updateConfirmBtn();
+    resetImgUI(); updateConfirmBtn();
   });
 
   function resetImgUI() {
@@ -313,7 +361,6 @@ const APP = (() => {
 
   function showPendingNotice() {
     pendingNotice.classList.add('show');
-    // Auto-fecha após 8 segundos
     clearTimeout(pendingTimer);
     pendingTimer = setTimeout(() => pendingNotice.classList.remove('show'), 8000);
   }
@@ -342,10 +389,7 @@ const APP = (() => {
       const descricao = descricaoInput.value.trim();
       if (descricao) formData.append('descricao', descricao);
 
-      const res = await fetch(`${API_URL}/ocorrencias`, {
-        method: 'POST',
-        body:   formData,
-      });
+      const res = await fetch(`${API_URL}/ocorrencias`, { method: 'POST', body: formData });
 
       if (!res.ok) {
         const erro = await res.json().catch(() => ({ erro: 'Erro desconhecido' }));
@@ -353,8 +397,6 @@ const APP = (() => {
       }
 
       closeSheet();
-
-      // Mostra o banner de pendência — principal feedback ao usuário
       showPendingNotice();
 
     } catch (err) {
