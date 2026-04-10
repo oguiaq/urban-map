@@ -598,9 +598,19 @@
             <span>🆔 #${o.id}</span>
           </div>
           <div class="card-coords">📍 ${parseFloat(o.latitude).toFixed(5)}, ${parseFloat(o.longitude).toFixed(5)}</div>
+          <div class="card-address">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+            </svg>
+            <span class="card-address-text"><span class="addr-skeleton"></span></span>
+          </div>
           ${descBlock}
         </div>
         <div class="card-actions">${acoes}</div>`;
+
+      // Busca o endereço após o card estar no DOM
+      preencherEndereco(card, o.latitude, o.longitude);
+
       return card;
     }
 
