@@ -4,8 +4,8 @@
 
 const APP = (() => {
 
-  const API_URL            = 'https://urban-map-api-production.up.railway.app';
-  const REFRESH_INTERVAL_MS = 60_000; // busca novos pins a cada 60 segundos
+  const API_URL             = 'https://urban-map-api-production.up.railway.app';
+  const REFRESH_INTERVAL_MS = 60_000;
 
   const CAT = {
     buraco:   { color: '#ff6b35', emoji: '🕳️', label: 'Buraco'             },
@@ -22,22 +22,24 @@ const APP = (() => {
   };
 
   /* ── STATE ── */
-  let userLat      = null;
-  let userLng      = null;
-  let selectedCat  = null;
-  let selectedFile = null;
-  let selectedImg  = null;
-  let markerStore  = {};       // id → dados (para lightbox)
-  let leafletMarkers = {};     // id → instância Leaflet (para não duplicar)
-  let markerCount  = 0;
-  let userMarker   = null;
-  let accCircle    = null;
-  let sheetOpen    = false;
-  let tileLayer    = null;
-  let currentTheme = 'dark';
-  let manualTheme  = null;
-  let firstLoad    = true;     // controla o fitBounds — só na primeira carga
-  let refreshTimer = null;
+  let userLat        = null;
+  let userLng        = null;
+  let selectedCat    = null;
+  let selectedFile   = null;
+  let selectedImg    = null;
+  let markerStore    = {};
+  let leafletMarkers = {};
+  let markerCount    = 0;
+  let userMarker     = null;
+  let accCircle      = null;
+  let sheetOpen      = false;
+  let tileLayer      = null;
+  let currentTheme   = 'dark';
+  let manualTheme    = null;
+  // firstLoad: controla se o mapa deve fazer fitBounds ao carregar ocorrências
+  // Só faz fitBounds se o GPS ainda não localizou o usuário
+  let gpsLocated     = false;
+  let initialFitDone = false;
 
   /* ── THEME ── */
   function autoTheme() {
@@ -71,7 +73,7 @@ const APP = (() => {
   /* ── MAP ── */
   const map = L.map('map', {
     zoomControl: false, attributionControl: false,
-    center: [-22.9, -43.17], zoom: 16,
+    center: [-22.9, -43.17], zoom: 15,
   });
   tileLayer = L.tileLayer(TILE.dark, { maxZoom: 19 }).addTo(map);
   L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(map);
@@ -87,9 +89,12 @@ const APP = (() => {
     userLat = pos.coords.latitude;
     userLng = pos.coords.longitude;
     const acc = pos.coords.accuracy;
+
     setStatus(true, 'Localizado');
     document.getElementById('locate-btn').classList.add('active');
+
     const ll = [userLat, userLng];
+
     if (!userMarker) {
       const icon = L.divIcon({
         className: '',
@@ -99,6 +104,9 @@ const APP = (() => {
       });
       userMarker = L.marker(ll, { icon, zIndexOffset: 1000 }).addTo(map);
       accCircle  = L.circle(ll, { radius: acc, color: '#00e5ff', fillColor: '#00e5ff', fillOpacity: .05, weight: 1 }).addTo(map);
+
+      // GPS localizou — centraliza no usuário com prioridade
+      gpsLocated = true;
       map.setView(ll, 17, { animate: true });
     } else {
       userMarker.setLatLng(ll);
@@ -115,19 +123,19 @@ const APP = (() => {
     navigator.geolocation.watchPosition(onPosition, onError, {
       enableHighAccuracy: true, maximumAge: 5_000, timeout: 15_000,
     });
-  } else { setStatus(false, 'GPS indisponível'); }
+  } else {
+    setStatus(false, 'GPS indisponível');
+  }
 
   document.getElementById('locate-btn').addEventListener('click', () => {
     if (userLat !== null) map.setView([userLat, userLng], 17, { animate: true });
   });
 
   /* ── RENDER MARKER ── */
-  // Só adiciona ao mapa se ainda não existir (evita duplicatas no refresh)
   function renderMarker(ocorrencia) {
     const { id, categoria, latitude, longitude, foto_url, criado_em, descricao } = ocorrencia;
 
-    // Já existe no mapa — ignora
-    if (leafletMarkers[id]) return;
+    if (leafletMarkers[id]) return; // já existe, não duplica
 
     const cat = CAT[categoria];
     if (!cat) return;
@@ -136,7 +144,10 @@ const APP = (() => {
     const date = new Date(criado_em).toLocaleDateString('pt-BR');
     const time = new Date(criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-    markerStore[id] = { img: foto_url, cat: categoria, date, time, lat: parseFloat(latitude), lng: parseFloat(longitude) };
+    markerStore[id] = {
+      img: foto_url, cat: categoria, date, time,
+      lat: parseFloat(latitude), lng: parseFloat(longitude),
+    };
 
     const icon = L.divIcon({
       className: '',
@@ -171,54 +182,49 @@ const APP = (() => {
       .setContent(popupHtml);
 
     const marker = L.marker(ll, { icon }).addTo(map).bindPopup(popup);
-
-    // Guarda referência para não duplicar
     leafletMarkers[id] = marker;
   }
 
-  /* ── REFRESH BUTTON SPIN ── */
+  /* ── REFRESH BUTTON ── */
   function setRefreshLoading(loading) {
     const btn = document.getElementById('refresh-btn');
     if (!btn) return;
-    btn.style.animation = loading ? 'spin-once .6s linear infinite' : '';
+    btn.style.animation = loading ? 'spin-once .7s linear infinite' : '';
     btn.title = loading ? 'Atualizando…' : 'Atualizar mapa';
   }
 
-  /* ── LOAD / REFRESH OCCURRENCES ── */
+  /* ── CARREGAR OCORRÊNCIAS ── */
   async function carregarOcorrencias(isManual = false) {
     try {
       if (isManual) setRefreshLoading(true);
-      else if (firstLoad) setStatus(false, 'Carregando…');
 
       const res  = await fetch(`${API_URL}/ocorrencias?limite=500`);
-      if (!res.ok) throw new Error('Falha ao carregar');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
       const antes = Object.keys(leafletMarkers).length;
-
       data.ocorrencias.forEach(o => renderMarker(o));
-
       const novos = Object.keys(leafletMarkers).length - antes;
+
       markerCount = data.total;
       document.getElementById('marker-count').textContent = markerCount;
 
-      // fitBounds só na primeira carga e se houver marcadores
-      if (firstLoad && data.ocorrencias.length > 0) {
+      // fitBounds apenas na primeira carga E somente se o GPS ainda não localizou
+      // (se o GPS já centralizou, não deslocamos o mapa)
+      if (!initialFitDone && data.ocorrencias.length > 0 && !gpsLocated) {
         const bounds = L.latLngBounds(
           data.ocorrencias.map(o => [parseFloat(o.latitude), parseFloat(o.longitude)])
         );
         map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17 });
-        firstLoad = false;
       }
+      initialFitDone = true;
 
-      // Avisa sobre novos pins encontrados no refresh (não na primeira carga)
-      if (!firstLoad && novos > 0 && !isManual) {
-        showToast(`🗺 ${novos} nova${novos > 1 ? 's ocorrências' : ' ocorrência'} no mapa`);
-      }
       if (isManual) {
         showToast(novos > 0
-          ? `🗺 ${novos} nova${novos > 1 ? 's ocorrências' : ' ocorrência'} carregada${novos > 1 ? 's' : ''}`
+          ? `🗺 ${novos} nova${novos > 1 ? 's ocorrências' : ' ocorrência'}`
           : '✓ Mapa atualizado');
+      } else if (novos > 0 && initialFitDone) {
+        showToast(`🗺 ${novos} nova${novos > 1 ? 's ocorrências' : ' ocorrência'} no mapa`);
       }
 
     } catch (err) {
@@ -226,20 +232,20 @@ const APP = (() => {
       if (isManual) showToast('❌ Erro ao atualizar');
     } finally {
       if (isManual) setRefreshLoading(false);
+      // Garante que o status seja atualizado independente do resultado
+      if (!gpsLocated) setStatus(false, 'Sem GPS');
     }
   }
 
   // Primeira carga
   carregarOcorrencias();
 
-  // Auto-refresh silencioso a cada 60s
-  refreshTimer = setInterval(() => carregarOcorrencias(false), REFRESH_INTERVAL_MS);
+  // Auto-refresh silencioso
+  setInterval(() => carregarOcorrencias(false), REFRESH_INTERVAL_MS);
 
-  // Botão de refresh manual
+  // Refresh manual
   const refreshBtn = document.getElementById('refresh-btn');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => carregarOcorrencias(true));
-  }
+  if (refreshBtn) refreshBtn.addEventListener('click', () => carregarOcorrencias(true));
 
   /* ── HELP MODAL ── */
   const helpOverlay = document.getElementById('help-overlay');
@@ -267,9 +273,7 @@ const APP = (() => {
     fab.classList.remove('open');
     sheet.classList.remove('visible');
     overlay.classList.remove('visible');
-    selectedCat  = null;
-    selectedFile = null;
-    selectedImg  = null;
+    selectedCat = null; selectedFile = null; selectedImg = null;
     document.querySelectorAll('.cat-btn').forEach(b => {
       b.classList.remove('selected');
       b.setAttribute('aria-checked', 'false');
@@ -289,7 +293,6 @@ const APP = (() => {
   /* ── CHAR COUNTER ── */
   const descricaoInput = document.getElementById('descricao-input');
   const charCount      = document.getElementById('char-count');
-
   descricaoInput.addEventListener('input', () => {
     const len = descricaoInput.value.length;
     charCount.textContent = `${len}/200`;
@@ -358,13 +361,11 @@ const APP = (() => {
   /* ── PENDING NOTICE ── */
   const pendingNotice = document.getElementById('pending-notice');
   let pendingTimer = null;
-
   function showPendingNotice() {
     pendingNotice.classList.add('show');
     clearTimeout(pendingTimer);
     pendingTimer = setTimeout(() => pendingNotice.classList.remove('show'), 8000);
   }
-
   document.getElementById('pending-close').addEventListener('click', () => {
     clearTimeout(pendingTimer);
     pendingNotice.classList.remove('show');
@@ -385,12 +386,10 @@ const APP = (() => {
       formData.append('latitude',   userLat.toString());
       formData.append('longitude',  userLng.toString());
       formData.append('foto',       selectedFile);
-
       const descricao = descricaoInput.value.trim();
       if (descricao) formData.append('descricao', descricao);
 
       const res = await fetch(`${API_URL}/ocorrencias`, { method: 'POST', body: formData });
-
       if (!res.ok) {
         const erro = await res.json().catch(() => ({ erro: 'Erro desconhecido' }));
         throw new Error(erro.erro || `Erro ${res.status}`);
