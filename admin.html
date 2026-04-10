@@ -25,26 +25,30 @@
     body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
     /* ── LOGIN ── */
-    #login-screen {
-      min-height: 100vh; display: flex;
-      align-items: center; justify-content: center; padding: 24px;
-    }
-    .login-box {
-      width: 100%; max-width: 380px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 24px; padding: 36px 28px; text-align: center;
-    }
+    #login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .login-box { width: 100%; max-width: 380px; background: var(--surface); border: 1px solid var(--border); border-radius: 24px; padding: 36px 28px; text-align: center; }
     .login-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.6rem; color: var(--accent); margin-bottom: 4px; }
     .login-logo span { color: var(--text); }
     .login-sub { font-size: .82rem; color: var(--muted); margin-bottom: 28px; }
     .login-box label { display: block; font-size: .78rem; color: var(--muted); text-align: left; margin-bottom: 6px; }
-    .login-box input {
+    .login-box input[type="password"] {
       width: 100%; padding: 12px 14px; border-radius: var(--radius);
       border: 1.5px solid var(--border); background: var(--bg); color: var(--text);
-      font-family: 'DM Sans', sans-serif; font-size: .95rem; outline: none; margin-bottom: 16px;
+      font-family: 'DM Sans', sans-serif; font-size: .95rem; outline: none; margin-bottom: 12px;
       transition: border-color .2s;
     }
-    .login-box input:focus { border-color: var(--accent); }
+    .login-box input[type="password"]:focus { border-color: var(--accent); }
+
+    /* Checkbox lembrar senha */
+    .remember-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 16px; text-align: left;
+    }
+    .remember-row input[type="checkbox"] {
+      width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+    }
+    .remember-row label { font-size: .8rem; color: var(--muted); cursor: pointer; margin: 0; }
+
     .btn-primary {
       width: 100%; padding: 14px; border-radius: var(--radius); border: none;
       background: var(--accent); color: #0b1520;
@@ -63,11 +67,11 @@
       background: rgba(11,21,32,.96); backdrop-filter: blur(8px);
       border-bottom: 1px solid var(--border);
       padding: 14px 24px;
-      display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
     }
     .admin-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.1rem; color: var(--accent); }
     .admin-logo span { color: var(--text); }
-    .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .header-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
     .filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
     .filter-tab {
@@ -75,9 +79,51 @@
       border: 1.5px solid var(--border); background: transparent;
       color: var(--muted); font-size: .78rem; font-weight: 600;
       font-family: 'Syne', sans-serif; cursor: pointer; transition: all .2s;
+      position: relative;
     }
     .filter-tab:hover { border-color: var(--accent); color: var(--accent); }
     .filter-tab.active { background: var(--accent); border-color: var(--accent); color: #0b1520; }
+
+    /* Badge de novos itens */
+    .new-badge {
+      position: absolute; top: -5px; right: -5px;
+      min-width: 18px; height: 18px; border-radius: 99px;
+      background: var(--red); color: #fff;
+      font-size: .6rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      padding: 0 4px; border: 2px solid var(--bg);
+      animation: badge-pop .3s cubic-bezier(.34,1.56,.64,1);
+    }
+    @keyframes badge-pop { from { transform: scale(0); } to { transform: scale(1); } }
+
+    /* Refresh button */
+    .btn-refresh {
+      width: 34px; height: 34px; border-radius: 50%;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: color .2s, border-color .2s, transform .15s;
+    }
+    .btn-refresh:hover  { color: var(--accent); border-color: var(--accent); }
+    .btn-refresh:active { transform: scale(.9); }
+    .btn-refresh.spinning svg { animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Auto-refresh indicator */
+    #refresh-indicator {
+      font-size: .7rem; color: var(--muted);
+      display: flex; align-items: center; gap: 5px;
+      white-space: nowrap;
+    }
+    .refresh-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: .4; transform: scale(.7); }
+    }
 
     .btn-logout {
       padding: 6px 14px; border-radius: 99px; border: 1px solid var(--border);
@@ -86,91 +132,49 @@
     }
     .btn-logout:hover { color: var(--red); border-color: var(--red); }
 
-    .stats-bar {
-      display: flex; gap: 12px; padding: 14px 24px;
-      border-bottom: 1px solid var(--border); flex-wrap: wrap;
-    }
-    .stat-chip {
-      display: flex; align-items: center; gap: 6px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 99px; padding: 5px 14px; font-size: .78rem; color: var(--muted);
-    }
+    /* Stats */
+    .stats-bar { display: flex; gap: 12px; padding: 14px 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+    .stat-chip { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 99px; padding: 5px 14px; font-size: .78rem; color: var(--muted); }
     .stat-chip.pendente  strong { color: var(--yellow); }
     .stat-chip.aprovada  strong { color: var(--green);  }
     .stat-chip.rejeitada strong { color: var(--red);    }
 
-    #cards-container {
-      padding: 20px 24px;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 16px;
-    }
+    /* Cards */
+    #cards-container { padding: 20px 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
 
-    #empty-state {
-      display: none; flex-direction: column; align-items: center;
-      justify-content: center; padding: 80px 24px; text-align: center;
-      color: var(--muted); gap: 12px;
-    }
+    #empty-state { display: none; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px; text-align: center; color: var(--muted); gap: 12px; }
     #empty-state .empty-icon { font-size: 3rem; }
     #empty-state p { font-size: .9rem; }
 
-    #loading {
-      display: flex; align-items: center; justify-content: center;
-      padding: 60px; color: var(--muted); font-size: .9rem; gap: 10px;
-    }
-    .spinner {
-      width: 20px; height: 20px; border: 2px solid var(--border);
-      border-top-color: var(--accent); border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading { display: flex; align-items: center; justify-content: center; padding: 60px; color: var(--muted); font-size: .9rem; gap: 10px; }
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
 
-    /* ── CARD ── */
-    .card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); overflow: hidden;
-      display: flex; flex-direction: column; transition: border-color .2s;
-    }
+    /* Card */
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column; transition: border-color .2s; }
     .card:hover { border-color: var(--accent); }
     .card.aprovada  { border-left: 3px solid var(--green);  }
     .card.rejeitada { border-left: 3px solid var(--red);    }
     .card.pendente  { border-left: 3px solid var(--yellow); }
-
-    .card-photo {
-      width: 100%; height: 180px; object-fit: cover; display: block;
-      cursor: zoom-in; transition: opacity .2s;
+    .card.novo      { animation: card-highlight .8s ease-out; }
+    @keyframes card-highlight {
+      0%   { box-shadow: 0 0 0 3px rgba(0,229,255,.6); }
+      100% { box-shadow: none; }
     }
+
+    .card-photo { width: 100%; height: 180px; object-fit: cover; display: block; cursor: zoom-in; transition: opacity .2s; }
     .card-photo:hover { opacity: .88; }
-
     .card-body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
-
-    .card-title {
-      font-family: 'Syne', sans-serif; font-weight: 700; font-size: .92rem;
-      display: flex; align-items: center; justify-content: space-between;
-    }
-    .status-badge {
-      font-size: .65rem; font-weight: 700; font-family: 'Syne', sans-serif;
-      padding: 2px 8px; border-radius: 99px; letter-spacing: .04em; text-transform: uppercase;
-    }
+    .card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .92rem; display: flex; align-items: center; justify-content: space-between; }
+    .status-badge { font-size: .65rem; font-weight: 700; font-family: 'Syne', sans-serif; padding: 2px 8px; border-radius: 99px; letter-spacing: .04em; text-transform: uppercase; }
     .status-badge.pendente  { background: rgba(255,210,63,.15); color: var(--yellow); }
     .status-badge.aprovada  { background: rgba(0,200,83,.15);   color: var(--green);  }
     .status-badge.rejeitada { background: rgba(255,77,109,.15); color: var(--red);    }
-
     .card-meta { font-size: .75rem; color: var(--muted); display: flex; flex-direction: column; gap: 3px; }
+    .card-coords { font-family: monospace; font-size: .7rem; color: var(--muted); background: var(--surface2); border-radius: 6px; padding: 4px 8px; }
+    .card-desc { font-size: .78rem; color: #8aaccc; font-style: italic; line-height: 1.4; padding-top: 4px; border-top: 1px solid var(--border); }
 
-    .card-coords {
-      font-family: monospace; font-size: .7rem; color: var(--muted);
-      background: var(--surface2); border-radius: 6px; padding: 4px 8px;
-    }
-
-    .card-actions {
-      display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--border);
-    }
-    .btn-approve, .btn-reject, .btn-delete {
-      flex: 1; padding: 9px 0; border-radius: 10px; border: none;
-      font-family: 'Syne', sans-serif; font-weight: 700; font-size: .78rem;
-      cursor: pointer; transition: opacity .2s, transform .15s;
-    }
+    .card-actions { display: flex; gap: 8px; padding: 12px 14px; border-top: 1px solid var(--border); }
+    .btn-approve, .btn-reject, .btn-delete { flex: 1; padding: 9px 0; border-radius: 10px; border: none; font-family: 'Syne', sans-serif; font-weight: 700; font-size: .78rem; cursor: pointer; transition: opacity .2s, transform .15s; }
     .btn-approve:active, .btn-reject:active, .btn-delete:active { transform: scale(.96); }
     .btn-approve { background: rgba(0,200,83,.15);   color: var(--green); border: 1.5px solid rgba(0,200,83,.3); }
     .btn-approve:hover { background: rgba(0,200,83,.25); }
@@ -178,36 +182,16 @@
     .btn-reject:hover  { background: rgba(255,77,109,.22); }
     .btn-delete  { flex: 0 0 auto; padding: 9px 12px; background: transparent; color: var(--muted); border: 1.5px solid var(--border); font-size: .75rem; }
     .btn-delete:hover  { color: var(--red); border-color: var(--red); }
-
     .card.processing { opacity: .5; pointer-events: none; }
 
-    /* ── LIGHTBOX ── */
-    #lightbox {
-      position: fixed; inset: 0; z-index: 900;
-      background: rgba(0,0,0,.93);
-      display: flex; align-items: center; justify-content: center;
-      opacity: 0; pointer-events: none; transition: opacity .25s;
-      backdrop-filter: blur(10px); padding: 20px; cursor: zoom-out;
-    }
+    /* Lightbox */
+    #lightbox { position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,.93); display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .25s; backdrop-filter: blur(10px); padding: 20px; cursor: zoom-out; }
     #lightbox.open { opacity: 1; pointer-events: all; }
     #lightbox img { max-width: 100%; max-height: 90vh; border-radius: 12px; object-fit: contain; box-shadow: 0 20px 60px rgba(0,0,0,.8); }
-    #lightbox-close {
-      position: fixed; top: 20px; right: 20px;
-      width: 36px; height: 36px; border-radius: 50%;
-      background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
-      color: #fff; cursor: pointer; font-size: 1.1rem;
-      display: flex; align-items: center; justify-content: center;
-    }
+    #lightbox-close { position: fixed; top: 20px; right: 20px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); color: #fff; cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
 
-    /* ── TOAST ── */
-    #toast {
-      position: fixed; bottom: 24px; left: 50%;
-      transform: translateX(-50%) translateY(20px); z-index: 999;
-      padding: 10px 20px; border-radius: 99px;
-      font-size: .85rem; font-weight: 500;
-      white-space: nowrap; opacity: 0; pointer-events: none;
-      transition: opacity .3s, transform .3s;
-    }
+    /* Toast */
+    #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); z-index: 999; padding: 10px 20px; border-radius: 99px; font-size: .85rem; font-weight: 500; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; }
     #toast.show         { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.show.success { background: #0f2a1f; border: 1px solid var(--green); color: var(--green); }
     #toast.show.error   { background: #2a0f15; border: 1px solid var(--red);   color: var(--red);   }
@@ -223,6 +207,10 @@
       <label for="senha-input">Senha de acesso</label>
       <input type="password" id="senha-input" placeholder="••••••••"
              onkeydown="if(event.key==='Enter')fazerLogin()" autofocus />
+      <div class="remember-row">
+        <input type="checkbox" id="remember-me" />
+        <label for="remember-me">Lembrar senha neste dispositivo</label>
+      </div>
       <button class="btn-primary" onclick="fazerLogin()">Entrar</button>
       <div id="login-error"></div>
     </div>
@@ -239,6 +227,18 @@
           <button class="filter-tab"        data-status="rejeitada" onclick="trocarFiltro(this)">❌ Rejeitadas</button>
           <button class="filter-tab"        data-status="todas"     onclick="trocarFiltro(this)">📋 Todas</button>
         </div>
+        <!-- Refresh manual -->
+        <button class="btn-refresh" id="btn-refresh" onclick="refreshManual()" title="Atualizar agora">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+        <!-- Indicador de auto-refresh -->
+        <div id="refresh-indicator">
+          <div class="refresh-dot"></div>
+          <span id="refresh-countdown">30s</span>
+        </div>
         <button class="btn-logout" onclick="logout()">Sair</button>
       </div>
     </header>
@@ -254,18 +254,24 @@
     <div id="cards-container"></div>
   </div>
 
-  <!-- Lightbox -->
   <div id="lightbox" onclick="fecharLightbox()">
     <button id="lightbox-close" onclick="fecharLightbox()">✕</button>
     <img id="lightbox-img" src="" alt="Foto ampliada" />
   </div>
-
   <div id="toast"></div>
 
   <script>
-    const API_URL = 'https://urban-map-api-production.up.railway.app';
-    let adminSenha  = '';
-    let filtroAtual = 'pendente';
+    const API_URL            = 'https://urban-map-api-production.up.railway.app';
+    const STORAGE_KEY        = 'um_admin_pwd';      // localStorage key
+    const REFRESH_INTERVAL   = 30;                  // segundos
+
+    let adminSenha   = '';
+    let filtroAtual  = 'pendente';
+    let refreshTimer = null;
+    let countdown    = REFRESH_INTERVAL;
+    let countdownTimer = null;
+    // Guarda IDs já renderizados para detectar novos sem recriar tudo
+    let renderedIds  = new Set();
 
     const CAT = {
       buraco:   { emoji: '🕳️', label: 'Buraco',              color: '#ff6b35' },
@@ -276,39 +282,157 @@
       inund:    { emoji: '🌊',  label: 'Inundação',           color: '#1e90ff' },
     };
 
+    // ── INIT — tenta autologin com senha salva ──
+    window.addEventListener('load', () => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        document.getElementById('senha-input').value = saved;
+        document.getElementById('remember-me').checked = true;
+        fazerLogin(true); // silencioso
+      }
+    });
+
     // ── LOGIN ──
-    async function fazerLogin() {
+    async function fazerLogin(silencioso = false) {
       const senha = document.getElementById('senha-input').value.trim();
       if (!senha) return;
+
       const btn = document.querySelector('.btn-primary');
-      btn.disabled = true; btn.textContent = 'Verificando…';
+      if (!silencioso) { btn.disabled = true; btn.textContent = 'Verificando…'; }
+
       try {
         const res = await fetch(`${API_URL}/ocorrencias/admin/lista?limite=1`, {
           headers: { 'x-admin-password': senha },
         });
+
         if (res.status === 401) {
-          document.getElementById('login-error').textContent = 'Senha incorreta.';
-          btn.disabled = false; btn.textContent = 'Entrar';
+          // Senha salva inválida — limpa e mostra tela de login
+          localStorage.removeItem(STORAGE_KEY);
+          if (!silencioso) {
+            document.getElementById('login-error').textContent = 'Senha incorreta.';
+            btn.disabled = false; btn.textContent = 'Entrar';
+          }
           return;
         }
         if (!res.ok) throw new Error('Erro ao conectar com a API.');
+
         adminSenha = senha;
+
+        // Salva senha se checkbox marcado
+        if (document.getElementById('remember-me').checked) {
+          localStorage.setItem(STORAGE_KEY, senha);
+        } else {
+          localStorage.removeItem(STORAGE_KEY);
+        }
+
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('admin-panel').style.display  = 'block';
+
         carregarStats();
-        carregarOcorrencias('pendente');
+        carregarOcorrencias('pendente', true);
+        iniciarAutoRefresh();
+
       } catch (err) {
-        document.getElementById('login-error').textContent = err.message;
-        btn.disabled = false; btn.textContent = 'Entrar';
+        localStorage.removeItem(STORAGE_KEY);
+        if (!silencioso) {
+          document.getElementById('login-error').textContent = err.message;
+          btn.disabled = false; btn.textContent = 'Entrar';
+        }
       }
     }
 
     function logout() {
       adminSenha = '';
+      localStorage.removeItem(STORAGE_KEY);
+      clearInterval(refreshTimer);
+      clearInterval(countdownTimer);
+      renderedIds.clear();
       document.getElementById('login-screen').style.display = 'flex';
       document.getElementById('admin-panel').style.display  = 'none';
       document.getElementById('senha-input').value = '';
+      document.getElementById('remember-me').checked = false;
       document.getElementById('login-error').textContent = '';
+    }
+
+    // ── AUTO-REFRESH COM COUNTDOWN ──
+    function iniciarAutoRefresh() {
+      clearInterval(refreshTimer);
+      clearInterval(countdownTimer);
+      countdown = REFRESH_INTERVAL;
+      atualizarCountdown();
+
+      // Contagem regressiva a cada segundo
+      countdownTimer = setInterval(() => {
+        countdown--;
+        atualizarCountdown();
+        if (countdown <= 0) {
+          countdown = REFRESH_INTERVAL;
+          carregarSilencioso();
+        }
+      }, 1000);
+    }
+
+    function atualizarCountdown() {
+      const el = document.getElementById('refresh-countdown');
+      if (el) el.textContent = `${countdown}s`;
+    }
+
+    async function carregarSilencioso() {
+      // Busca apenas o filtro atual, adiciona novos cards sem recriar a lista
+      try {
+        const qs  = filtroAtual === 'todas' ? 'status=todas' : `status=${filtroAtual}`;
+        const res = await fetch(`${API_URL}/ocorrencias/admin/lista?${qs}&limite=100`, {
+          headers: { 'x-admin-password': adminSenha },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+
+        const container = document.getElementById('cards-container');
+        let novos = 0;
+
+        data.ocorrencias.forEach(o => {
+          if (!renderedIds.has(o.id)) {
+            // Novo item — adiciona no topo com destaque
+            const card = criarCard(o);
+            card.classList.add('novo');
+            container.insertBefore(card, container.firstChild);
+            renderedIds.add(o.id);
+            novos++;
+          }
+        });
+
+        // Atualiza badge da aba pendente
+        atualizarBadgePendente(data.total);
+        carregarStats();
+
+        if (novos > 0) {
+          showToast(`🔔 ${novos} nova${novos > 1 ? 's ocorrências' : ' ocorrência'}`, 'success');
+        }
+
+      } catch (_) {}
+    }
+
+    async function refreshManual() {
+      const btn = document.getElementById('btn-refresh');
+      btn.classList.add('spinning');
+      countdown = REFRESH_INTERVAL; // reseta countdown
+      await carregarOcorrencias(filtroAtual, false);
+      carregarStats();
+      btn.classList.remove('spinning');
+      showToast('✓ Atualizado', 'success');
+    }
+
+    // ── BADGE NA ABA PENDENTES ──
+    function atualizarBadgePendente(total) {
+      const tab = document.querySelector('.filter-tab[data-status="pendente"]');
+      if (!tab) return;
+      let badge = tab.querySelector('.new-badge');
+      if (total > 0) {
+        if (!badge) { badge = document.createElement('span'); badge.className = 'new-badge'; tab.appendChild(badge); }
+        badge.textContent = total > 99 ? '99+' : total;
+      } else if (badge) {
+        badge.remove();
+      }
     }
 
     // ── STATS ──
@@ -323,6 +447,7 @@
         document.getElementById('stat-pendente').textContent  = p.total ?? '—';
         document.getElementById('stat-aprovada').textContent  = a.total ?? '—';
         document.getElementById('stat-rejeitada').textContent = r.total ?? '—';
+        atualizarBadgePendente(p.total || 0);
       } catch (_) {}
     }
 
@@ -331,31 +456,45 @@
       document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
       btn.classList.add('active');
       filtroAtual = btn.dataset.status;
-      carregarOcorrencias(filtroAtual);
+      renderedIds.clear();
+      carregarOcorrencias(filtroAtual, true);
     }
 
-    // ── CARREGAR ──
-    async function carregarOcorrencias(status) {
+    // ── CARREGAR (recarga completa) ──
+    async function carregarOcorrencias(status, mostrarLoading = true) {
       const container = document.getElementById('cards-container');
       const loading   = document.getElementById('loading');
       const empty     = document.getElementById('empty-state');
-      container.innerHTML = '';
-      loading.style.display = 'flex';
-      empty.style.display   = 'none';
+
+      if (mostrarLoading) {
+        container.innerHTML = '';
+        renderedIds.clear();
+        loading.style.display = 'flex';
+        empty.style.display   = 'none';
+      }
+
       try {
         const qs  = status === 'todas' ? 'status=todas' : `status=${status}`;
         const res = await fetch(`${API_URL}/ocorrencias/admin/lista?${qs}&limite=100`, {
           headers: { 'x-admin-password': adminSenha },
         });
         const data = await res.json();
+
         loading.style.display = 'none';
+
         if (!data.ocorrencias || data.ocorrencias.length === 0) {
-          const msgs = { pendente:'Nenhuma ocorrência pendente. 🎉', aprovada:'Nenhuma aprovada ainda.', rejeitada:'Nenhuma rejeitada.', todas:'Nenhuma ocorrência registrada.' };
+          const msgs = { pendente: 'Nenhuma ocorrência pendente. 🎉', aprovada: 'Nenhuma aprovada ainda.', rejeitada: 'Nenhuma rejeitada.', todas: 'Nenhuma ocorrência registrada.' };
           document.getElementById('empty-msg').textContent = msgs[status] || 'Nenhuma ocorrência.';
           empty.style.display = 'flex';
           return;
         }
-        data.ocorrencias.forEach(o => container.appendChild(criarCard(o)));
+
+        container.innerHTML = '';
+        data.ocorrencias.forEach(o => {
+          container.appendChild(criarCard(o));
+          renderedIds.add(o.id);
+        });
+
       } catch (err) {
         loading.style.display = 'none';
         showToast('Erro: ' + err.message, 'error');
@@ -367,6 +506,7 @@
       const cat  = CAT[o.categoria] || { emoji: '📍', label: o.categoria, color: '#aaa' };
       const date = new Date(o.criado_em).toLocaleDateString('pt-BR');
       const time = new Date(o.criado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
       const card = document.createElement('div');
       card.className = `card ${o.status}`;
       card.dataset.id = o.id;
@@ -384,6 +524,10 @@
                  <button class="btn-delete"  onclick="deletarCard(${o.id})" title="Deletar">🗑</button>`;
       }
 
+      const descBlock = o.descricao
+        ? `<div class="card-desc">"${o.descricao}"</div>`
+        : '';
+
       card.innerHTML = `
         <img class="card-photo" src="${o.foto_url}" alt="Foto" onclick="abrirLightbox('${o.foto_url}')" loading="lazy" />
         <div class="card-body">
@@ -396,6 +540,7 @@
             <span>🆔 #${o.id}</span>
           </div>
           <div class="card-coords">📍 ${parseFloat(o.latitude).toFixed(5)}, ${parseFloat(o.longitude).toFixed(5)}</div>
+          ${descBlock}
         </div>
         <div class="card-actions">${acoes}</div>`;
       return card;
@@ -417,7 +562,7 @@
         if (card) {
           card.style.transition = 'opacity .3s, transform .3s';
           card.style.opacity = '0'; card.style.transform = 'scale(.95)';
-          setTimeout(() => card.remove(), 300);
+          setTimeout(() => { card.remove(); renderedIds.delete(id); }, 300);
         }
         carregarStats();
       } catch (err) {
@@ -437,7 +582,7 @@
         });
         if (!res.ok) throw new Error('Erro ao deletar.');
         showToast('🗑 Deletada com sucesso.', 'success');
-        if (card) { card.style.opacity = '0'; setTimeout(() => card.remove(), 300); }
+        if (card) { card.style.opacity = '0'; setTimeout(() => { card.remove(); renderedIds.delete(id); }, 300); }
         carregarStats();
       } catch (err) {
         if (card) card.classList.remove('processing');
@@ -446,21 +591,14 @@
     }
 
     // ── LIGHTBOX ──
-    function abrirLightbox(url) {
-      document.getElementById('lightbox-img').src = url;
-      document.getElementById('lightbox').classList.add('open');
-    }
-    function fecharLightbox() {
-      document.getElementById('lightbox').classList.remove('open');
-      setTimeout(() => { document.getElementById('lightbox-img').src = ''; }, 300);
-    }
+    function abrirLightbox(url) { document.getElementById('lightbox-img').src = url; document.getElementById('lightbox').classList.add('open'); }
+    function fecharLightbox()   { document.getElementById('lightbox').classList.remove('open'); setTimeout(() => { document.getElementById('lightbox-img').src = ''; }, 300); }
     document.addEventListener('keydown', e => { if (e.key === 'Escape') fecharLightbox(); });
 
     // ── TOAST ──
     function showToast(msg, tipo = 'success') {
       const el = document.getElementById('toast');
-      el.textContent = msg;
-      el.className = `show ${tipo}`;
+      el.textContent = msg; el.className = `show ${tipo}`;
       clearTimeout(el._t);
       el._t = setTimeout(() => { el.className = ''; }, 3200);
     }
