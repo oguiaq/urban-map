@@ -132,6 +132,70 @@
     }
     .btn-logout:hover { color: var(--red); border-color: var(--red); }
 
+    /* Relatório */
+    .btn-relatorio {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 99px;
+      border: 1.5px solid color-mix(in srgb, var(--green) 50%, transparent);
+      background: color-mix(in srgb, var(--green) 8%, transparent);
+      color: var(--green); font-size: .78rem; font-weight: 600;
+      font-family: 'Syne', sans-serif; cursor: pointer;
+      transition: background .2s, border-color .2s, opacity .2s;
+      white-space: nowrap;
+    }
+    .btn-relatorio:hover { background: color-mix(in srgb, var(--green) 18%, transparent); border-color: var(--green); }
+    .btn-relatorio:disabled { opacity: .45; cursor: not-allowed; }
+
+    /* Modal de relatório */
+    #modal-relatorio {
+      position: fixed; inset: 0; z-index: 900;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none; transition: opacity .25s;
+    }
+    #modal-relatorio.open { opacity: 1; pointer-events: all; }
+
+    .modal-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; padding: 28px; width: 100%; max-width: 340px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+      transform: scale(.94); transition: transform .25s;
+    }
+    #modal-relatorio.open .modal-box { transform: scale(1); }
+
+    .modal-box h3 {
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1rem;
+      color: var(--text); margin-bottom: 6px;
+    }
+    .modal-box p { font-size: .82rem; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+
+    .modal-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .modal-fields label { display: block; font-size: .72rem; color: var(--muted); margin-bottom: 4px; }
+    .modal-fields select {
+      width: 100%; padding: 9px 10px; border-radius: 10px;
+      border: 1.5px solid var(--border); background: var(--bg); color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: .88rem; outline: none;
+      cursor: pointer; transition: border-color .2s;
+    }
+    .modal-fields select:focus { border-color: var(--accent); }
+
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-modal-cancel {
+      flex: 1; padding: 11px; border-radius: 10px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); font-family: 'Syne', sans-serif; font-weight: 600;
+      font-size: .85rem; cursor: pointer; transition: background .2s;
+    }
+    .btn-modal-cancel:hover { background: var(--surface2); color: var(--text); }
+    .btn-modal-confirm {
+      flex: 2; padding: 11px; border-radius: 10px; border: none;
+      background: var(--green); color: #fff;
+      font-family: 'Syne', sans-serif; font-weight: 700;
+      font-size: .85rem; cursor: pointer; transition: opacity .2s;
+    }
+    .btn-modal-confirm:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-modal-confirm:not(:disabled):hover { opacity: .88; }
+
     /* Stats */
     .stats-bar { display: flex; gap: 12px; padding: 14px 24px; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
     .stat-chip { display: flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 99px; padding: 5px 14px; font-size: .78rem; color: var(--muted); }
@@ -252,6 +316,14 @@
           <div class="refresh-dot"></div>
           <span id="refresh-countdown">30s</span>
         </div>
+        <button class="btn-relatorio" id="btn-relatorio" title="Gerar relatório PDF">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+          </svg>
+          Relatório PDF
+        </button>
         <button class="btn-logout" onclick="logout()">Sair</button>
       </div>
     </header>
@@ -265,6 +337,41 @@
     <div id="loading"><div class="spinner"></div> Carregando ocorrências…</div>
     <div id="empty-state"><div class="empty-icon">📭</div><p id="empty-msg">Nenhuma ocorrência pendente.</p></div>
     <div id="cards-container"></div>
+  </div>
+
+  <!-- MODAL RELATÓRIO -->
+  <div id="modal-relatorio">
+    <div class="modal-box">
+      <h3>📄 Gerar Relatório PDF</h3>
+      <p>Selecione o mês e ano para gerar o relatório de ocorrências aprovadas.</p>
+      <div class="modal-fields">
+        <div>
+          <label for="rel-mes">Mês</label>
+          <select id="rel-mes">
+            <option value="1">Janeiro</option>
+            <option value="2">Fevereiro</option>
+            <option value="3">Março</option>
+            <option value="4">Abril</option>
+            <option value="5">Maio</option>
+            <option value="6">Junho</option>
+            <option value="7">Julho</option>
+            <option value="8">Agosto</option>
+            <option value="9">Setembro</option>
+            <option value="10">Outubro</option>
+            <option value="11">Novembro</option>
+            <option value="12">Dezembro</option>
+          </select>
+        </div>
+        <div>
+          <label for="rel-ano">Ano</label>
+          <select id="rel-ano"></select>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" id="btn-modal-cancel">Cancelar</button>
+        <button class="btn-modal-confirm" id="btn-modal-confirm">⬇ Baixar PDF</button>
+      </div>
+    </div>
   </div>
 
   <div id="lightbox" onclick="fecharLightbox()">
@@ -670,6 +777,86 @@
       clearTimeout(el._t);
       el._t = setTimeout(() => { el.className = ''; }, 3200);
     }
+
+    // ── RELATÓRIO PDF ──
+    (function () {
+      const modal      = document.getElementById('modal-relatorio');
+      const selMes     = document.getElementById('rel-mes');
+      const selAno     = document.getElementById('rel-ano');
+      const btnConfirm = document.getElementById('btn-modal-confirm');
+      const btnCancel  = document.getElementById('btn-modal-cancel');
+      const btnAbre    = document.getElementById('btn-relatorio');
+
+      // Preenche o select de anos (2025 até o ano atual)
+      const anoAtual = new Date().getFullYear();
+      for (let a = anoAtual; a >= 2025; a--) {
+        const opt = document.createElement('option');
+        opt.value = a;
+        opt.textContent = a;
+        selAno.appendChild(opt);
+      }
+
+      // Pré-seleciona o mês atual
+      selMes.value = new Date().getMonth() + 1;
+
+      function abrirModal() {
+        modal.classList.add('open');
+      }
+
+      function fecharModal() {
+        modal.classList.remove('open');
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = '⬇ Baixar PDF';
+      }
+
+      btnAbre.addEventListener('click', abrirModal);
+      btnCancel.addEventListener('click', fecharModal);
+      modal.addEventListener('click', e => { if (e.target === modal) fecharModal(); });
+
+      btnConfirm.addEventListener('click', async () => {
+        const mes = selMes.value;
+        const ano = selAno.value;
+
+        btnConfirm.disabled = true;
+        btnConfirm.textContent = 'Gerando…';
+
+        try {
+          // Faz o download do PDF via fetch com autenticação
+          const res = await fetch(
+            `${API_URL}/relatorio?mes=${mes}&ano=${ano}`,
+            { headers: { 'x-admin-password': adminSenha } }
+          );
+
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({ erro: 'Erro desconhecido' }));
+            throw new Error(err.erro || `Erro ${res.status}`);
+          }
+
+          // Cria um blob e força o download no browser
+          const blob = await res.blob();
+          const url  = URL.createObjectURL(blob);
+          const a    = document.createElement('a');
+          a.href     = url;
+          // Nome do arquivo igual ao que a API define no Content-Disposition
+          const nomeMes = ['','janeiro','fevereiro','marco','abril','maio','junho',
+            'julho','agosto','setembro','outubro','novembro','dezembro'][mes];
+          a.download = `urbanmap-relatorio-${String(mes).padStart(2,'0')}-${ano}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          fecharModal();
+          showToast('✓ Relatório gerado com sucesso!', 'success');
+
+        } catch (err) {
+          btnConfirm.disabled = false;
+          btnConfirm.textContent = '⬇ Baixar PDF';
+          showToast('❌ ' + err.message, 'error');
+        }
+      });
+    })();
+
   </script>
 </body>
 </html>
